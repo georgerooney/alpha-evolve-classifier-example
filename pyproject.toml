@@ -1,0 +1,42 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+[project]
+name = "alpha-evolve-classifier-example"
+version = "0.1.0"
+description = "Multi-Model Clinical Risk & Care Allocation Portfolio for GCP AlphaEvolve"
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.11"
+dependencies = [
+    # AlphaEvolve client (no PyPI release). Pinned: the API is v1alpha and the client may change under us.
+    "alpha_evolve @ git+https://github.com/Google-Cloud-AI/alphaevolve-on-googlecloud@b51ab7a6446d0168bf6db52c6dccbec414a21b3f",
+    "numpy>=1.26.0",
+    "scipy>=1.12.0",
+    "scikit-learn>=1.4.0",
+    "lightgbm>=4.3.0",
+    "xgboost>=2.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Modules stay flat (candidates import `clinical_toolkit`, `clinical_models`, ... by bare name), so the source dirs go on
+# sys.path rather than becoming a package. "." makes `artifacts.best_evolved_program` and `problems.*` importable.
+pythonpath = ["src", "simulator", "."]
+python_files = ["test_*.py"]

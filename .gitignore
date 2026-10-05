@@ -1,0 +1,12 @@
+.env
+__pycache__/
+.pytest_cache/
+artifacts/runs/
+.venv/
+.evolve/
+
+# Downloaded open-source datasets (re-fetch with scripts/fetch_diabetes130.sh)
+data/
+
+# Local run logs (experiment names, timings)
+artifacts/logs/

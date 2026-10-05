@@ -1,0 +1,13 @@
+{
+  "problem_id": "_template",
+  "title": "Template Clinical Risk & Care Allocation Problem",
+  "horizon_days": 30,
+  "target_auc": 0.75,
+  "target_specificity": 0.80,
+  "min_sensitivity_floor": 0.55,
+  "event_cost_usd": 18000.0,
+  "hrrp_penalty_multiplier": 1.15,
+  "roi_per_1pct_auc_usd": 450000.0,
+  "base_seed": 55000,
+  "scenarios": []
+}

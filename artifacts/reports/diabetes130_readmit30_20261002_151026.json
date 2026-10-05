@@ -1,0 +1,80 @@
+{
+  "problem_id": "diabetes130_readmit30",
+  "generated_at": "2026-10-02T15:10:26.364726+00:00",
+  "git_commit": "afe9fa341a4ebd975aa30d863ea11ceab97e5a49",
+  "private_seeds_from_env": true,
+  "tuned_baseline": {
+    "params": {
+      "n_estimators": 150,
+      "learning_rate": 0.0226,
+      "num_leaves": 31,
+      "min_child_samples": 400,
+      "subsample": 0.86,
+      "colsample_bytree": 0.52,
+      "reg_lambda": 0.834,
+      "min_count": 50,
+      "cat_smooth": 53.78
+    },
+    "selection_auc": 0.6636884736261468,
+    "selection_score": 6636.884736261468,
+    "trials": 24
+  },
+  "locked_test_n": 19734,
+  "arms": [
+    {
+      "arm": "tuned_lightgbm",
+      "test_auc": 0.6793309088743501,
+      "test_pr_auc": 0.23265327965498497,
+      "test_brier": 0.09667494801007588,
+      "violations": [],
+      "vs_tuned_delta": 0.0,
+      "vs_tuned_ci_low": 0.0,
+      "vs_tuned_ci_high": 0.0,
+      "vs_tuned_p_value_one_sided": 1.0
+    },
+    {
+      "arm": "seed",
+      "test_auc": 0.6518182874595126,
+      "test_pr_auc": 0.2116576342129329,
+      "test_brier": 0.0983488011914201,
+      "violations": [],
+      "vs_tuned_delta": -0.027512621414837457,
+      "vs_tuned_ci_low": -0.03436784817445654,
+      "vs_tuned_ci_high": -0.020119609751861965,
+      "vs_tuned_p_value_one_sided": 1.0
+    },
+    {
+      "arm": "rank1",
+      "test_auc": 0.6870746592978187,
+      "test_pr_auc": 0.242963672485448,
+      "test_brier": 0.09590205380646907,
+      "violations": [],
+      "vs_tuned_delta": 0.007743750423468643,
+      "vs_tuned_ci_low": 0.0034538835278715707,
+      "vs_tuned_ci_high": 0.012052510813544807,
+      "vs_tuned_p_value_one_sided": 0.0
+    },
+    {
+      "arm": "rank2",
+      "test_auc": 0.6895392245171574,
+      "test_pr_auc": 0.2449278968711387,
+      "test_brier": 0.09578112075445676,
+      "violations": [],
+      "vs_tuned_delta": 0.01020831564280733,
+      "vs_tuned_ci_low": 0.0060891417103667075,
+      "vs_tuned_ci_high": 0.0143033102737816,
+      "vs_tuned_p_value_one_sided": 0.0
+    },
+    {
+      "arm": "rank3",
+      "test_auc": 0.6876481414633081,
+      "test_pr_auc": 0.2430029413919184,
+      "test_brier": 0.09588648364207666,
+      "violations": [],
+      "vs_tuned_delta": 0.008317232588958001,
+      "vs_tuned_ci_low": 0.0043513668780918585,
+      "vs_tuned_ci_high": 0.012674977342519827,
+      "vs_tuned_p_value_one_sided": 0.0
+    }
+  ]
+}

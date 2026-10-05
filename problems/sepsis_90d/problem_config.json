@@ -1,0 +1,50 @@
+{
+  "problem_id": "sepsis_90d",
+  "title": "Sepsis Early Detection & 90-Day Survivor Trajectory",
+  "horizon_days": 90,
+  "target_auc": 0.8,
+  "target_specificity": 0.8,
+  "min_sensitivity_floor": 0.65,
+  "event_cost_usd": 28500.0,
+  "hrrp_penalty_multiplier": 1.15,
+  "roi_per_1pct_auc_usd": 680000.0,
+  "base_seed": 33000,
+  "scenarios": [
+    {
+      "scenario_id": "SEPSIS-01",
+      "scenario_name": "Post-ICU Sepsis Survivor 90-Day Trajectory",
+      "description": "Sepsis survivors discharged after ICU stay with residual organ dysfunction and shock index risk.",
+      "n_train": 320,
+      "n_eval": 160,
+      "budget_usd": 32000.0,
+      "shift": "sepsis_core"
+    },
+    {
+      "scenario_id": "SEPSIS-02",
+      "scenario_name": "Incomplete Lactate Clearance & Hemodynamic Fragility",
+      "description": "Subtle shock-index x impaired 6-hour lactate clearance interactions missed by linear scores.",
+      "n_train": 300,
+      "n_eval": 150,
+      "budget_usd": 30000.0,
+      "shift": "lactate_shock"
+    },
+    {
+      "scenario_id": "SEPSIS-03",
+      "scenario_name": "Immunocompromised & Renal-Impaired Sepsis Cohort",
+      "description": "Multi-organ renal + hematologic vulnerability post-sepsis hospitalization.",
+      "n_train": 300,
+      "n_eval": 150,
+      "budget_usd": 29000.0,
+      "shift": "renal_metabolic"
+    },
+    {
+      "scenario_id": "SEPSIS-04",
+      "scenario_name": "Post-Sepsis SNF & Rural Tele-Followup Cohort",
+      "description": "Discharges to SNF and rural zip codes with high SDoH barriers to early sepsis follow-up.",
+      "n_train": 300,
+      "n_eval": 150,
+      "budget_usd": 26000.0,
+      "shift": "snf_transition"
+    }
+  ]
+}

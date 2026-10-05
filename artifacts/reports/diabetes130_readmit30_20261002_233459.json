@@ -1,0 +1,195 @@
+{
+  "problem_id": "diabetes130_readmit30",
+  "generated_at": "2026-10-02T23:34:59.703083+00:00",
+  "git_commit": "2386fc587fc08407fb85bf024e5a0d757f87ea34",
+  "private_seeds_from_env": true,
+  "tuned_baseline": {
+    "params": {
+      "n_estimators": 150,
+      "learning_rate": 0.0158,
+      "num_leaves": 31,
+      "min_child_samples": 200,
+      "subsample": 0.69,
+      "colsample_bytree": 0.63,
+      "reg_lambda": 0.022,
+      "min_count": 100,
+      "cat_smooth": 69.23
+    },
+    "selection_auc": 0.6645986866346923,
+    "selection_score": 6645.986866346923,
+    "trials": 48
+  },
+  "tuned_xgboost": {
+    "params": {
+      "n_estimators": 400,
+      "learning_rate": 0.023,
+      "subsample": 1.0,
+      "colsample_bytree": 0.48,
+      "reg_lambda": 0.025,
+      "min_count": 10,
+      "max_depth": 3,
+      "min_child_weight": 2.06
+    },
+    "selection_auc": 0.6605927758746221,
+    "selection_score": 6605.92775874622,
+    "trials": 48
+  },
+  "human_stack": {
+    "selection_auc": 0.6708174824779013,
+    "selection_score": 6708.174824779013
+  },
+  "locked_test_n": 19734,
+  "arms": [
+    {
+      "arm": "tuned_lightgbm",
+      "test_auc": 0.6808363311020454,
+      "test_pr_auc": 0.23366245401920674,
+      "test_brier": 0.0968141948398787,
+      "violations": [],
+      "vs_tuned_delta": 0.0,
+      "vs_tuned_ci_low": 0.0,
+      "vs_tuned_ci_high": 0.0,
+      "vs_tuned_p_value_one_sided": 1.0,
+      "vs_stack_delta": -0.002617108548142011,
+      "vs_stack_ci_low": -0.00555653704387184,
+      "vs_stack_ci_high": 0.00038733912437356673,
+      "vs_stack_p_value_one_sided": 0.958
+    },
+    {
+      "arm": "tuned_xgboost",
+      "test_auc": 0.6729645149393416,
+      "test_pr_auc": 0.22912423341129456,
+      "test_brier": 0.09686680081673539,
+      "violations": [],
+      "vs_tuned_delta": -0.007871816162703826,
+      "vs_tuned_ci_low": -0.012833855806094228,
+      "vs_tuned_ci_high": -0.0028394240646161645,
+      "vs_tuned_p_value_one_sided": 1.0,
+      "vs_stack_delta": -0.010488924710845837,
+      "vs_stack_ci_low": -0.015343118117698437,
+      "vs_stack_ci_high": -0.005863598307649402,
+      "vs_stack_p_value_one_sided": 1.0
+    },
+    {
+      "arm": "human_stack",
+      "test_auc": 0.6834534396501875,
+      "test_pr_auc": 0.2393468724904365,
+      "test_brier": 0.09619127914556615,
+      "violations": [],
+      "vs_tuned_delta": 0.002617108548142011,
+      "vs_tuned_ci_low": -0.0003873391243735674,
+      "vs_tuned_ci_high": 0.00555653704387184,
+      "vs_tuned_p_value_one_sided": 0.042,
+      "vs_stack_delta": 0.0,
+      "vs_stack_ci_low": 0.0,
+      "vs_stack_ci_high": 0.0,
+      "vs_stack_p_value_one_sided": 1.0
+    },
+    {
+      "arm": "seed",
+      "test_auc": 0.6808363311020454,
+      "test_pr_auc": 0.23366245401920674,
+      "test_brier": 0.0968141948398787,
+      "violations": [],
+      "vs_tuned_delta": 0.0,
+      "vs_tuned_ci_low": 0.0,
+      "vs_tuned_ci_high": 0.0,
+      "vs_tuned_p_value_one_sided": 1.0,
+      "vs_stack_delta": -0.002617108548142011,
+      "vs_stack_ci_low": -0.00555653704387184,
+      "vs_stack_ci_high": 0.00038733912437356673,
+      "vs_stack_p_value_one_sided": 0.958
+    },
+    {
+      "arm": "17130586394704764164/rank1",
+      "test_auc": 0.690337092998564,
+      "test_pr_auc": 0.24618244796190136,
+      "test_brier": 0.09571516463589873,
+      "violations": [],
+      "vs_tuned_delta": 0.009500761896518606,
+      "vs_tuned_ci_low": 0.005509016241083159,
+      "vs_tuned_ci_high": 0.013326930552226113,
+      "vs_tuned_p_value_one_sided": 0.0,
+      "vs_stack_delta": 0.006883653348376595,
+      "vs_stack_ci_low": 0.0036697892613300836,
+      "vs_stack_ci_high": 0.00998881258071118,
+      "vs_stack_p_value_one_sided": 0.0
+    },
+    {
+      "arm": "6843910815780438870/rank1",
+      "test_auc": 0.6875801719916569,
+      "test_pr_auc": 0.24338262442427547,
+      "test_brier": 0.29418134071924174,
+      "violations": [],
+      "vs_tuned_delta": 0.006743840889611441,
+      "vs_tuned_ci_low": 0.0030139498885480786,
+      "vs_tuned_ci_high": 0.010677280286405185,
+      "vs_tuned_p_value_one_sided": 0.0,
+      "vs_stack_delta": 0.00412673234146943,
+      "vs_stack_ci_low": 0.0008952557028574365,
+      "vs_stack_ci_high": 0.007383851638483368,
+      "vs_stack_p_value_one_sided": 0.004
+    },
+    {
+      "arm": "13049864015636605646/rank1",
+      "test_auc": 0.6899804267604654,
+      "test_pr_auc": 0.246605605115472,
+      "test_brier": 0.09570214888798506,
+      "violations": [],
+      "vs_tuned_delta": 0.009144095658420004,
+      "vs_tuned_ci_low": 0.0051768680216017745,
+      "vs_tuned_ci_high": 0.013070395546602552,
+      "vs_tuned_p_value_one_sided": 0.0,
+      "vs_stack_delta": 0.006526987110277993,
+      "vs_stack_ci_low": 0.0032182696706846868,
+      "vs_stack_ci_high": 0.009628477752714248,
+      "vs_stack_p_value_one_sided": 0.001
+    },
+    {
+      "arm": "1499797710884767402/rank1",
+      "test_auc": 0.5,
+      "test_pr_auc": 0.11497922367487586,
+      "test_brier": 0.10176255949991879,
+      "violations": [
+        "LOCKED-TEST: runtime error: ValueError: Categorical feature at index 9 is expected to have a cardinality <= 255 but actually has a cardinality of 333."
+      ],
+      "vs_tuned_delta": -0.18083633110204544,
+      "vs_tuned_ci_low": -0.19235433472522778,
+      "vs_tuned_ci_high": -0.16968748608818215,
+      "vs_tuned_p_value_one_sided": 1.0,
+      "vs_stack_delta": -0.18345343965018746,
+      "vs_stack_ci_low": -0.19495421787757783,
+      "vs_stack_ci_high": -0.17261869330386453,
+      "vs_stack_p_value_one_sided": 1.0
+    },
+    {
+      "arm": "rank2",
+      "test_auc": 0.6895392245171574,
+      "test_pr_auc": 0.2449278968711387,
+      "test_brier": 0.09578112075445676,
+      "violations": [],
+      "vs_tuned_delta": 0.00870289341511199,
+      "vs_tuned_ci_low": 0.004265376290143385,
+      "vs_tuned_ci_high": 0.012846820880136054,
+      "vs_tuned_p_value_one_sided": 0.0,
+      "vs_stack_delta": 0.006085784866969979,
+      "vs_stack_ci_low": 0.0027474919316933634,
+      "vs_stack_ci_high": 0.009506423404345588,
+      "vs_stack_p_value_one_sided": 0.0
+    }
+  ],
+  "candidate_summary": {
+    "tuned": {
+      "mean_delta": -0.02934894784847668,
+      "sd_delta": 0.08469072212047411,
+      "n": 5,
+      "n_ci_above_zero": 4
+    },
+    "stack": {
+      "mean_delta": -0.03196605639661869,
+      "sd_delta": 0.08469072212047411,
+      "n": 5,
+      "n_ci_above_zero": 4
+    }
+  }
+}

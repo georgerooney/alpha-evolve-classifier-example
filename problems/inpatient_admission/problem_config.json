@@ -1,0 +1,50 @@
+{
+  "problem_id": "inpatient_admission",
+  "title": "Inpatient Admissions & Acute Bed Capacity Optimization",
+  "horizon_days": 14,
+  "target_auc": 0.78,
+  "target_specificity": 0.8,
+  "min_sensitivity_floor": 0.6,
+  "event_cost_usd": 14200.0,
+  "hrrp_penalty_multiplier": 1.0,
+  "roi_per_1pct_auc_usd": 510000.0,
+  "base_seed": 22000,
+  "scenarios": [
+    {
+      "scenario_id": "INPAT-01",
+      "scenario_name": "Metro Acute Care ED-to-Inpatient Triage",
+      "description": "Predicting unplanned inpatient admissions from ED and urgent ambulatory encounters.",
+      "n_train": 400,
+      "n_eval": 200,
+      "budget_usd": 30000.0,
+      "shift": "standard"
+    },
+    {
+      "scenario_id": "INPAT-02",
+      "scenario_name": "Winter Respiratory & ED Boarding Surge",
+      "description": "High ED boarding hours and vital-sign instability during seasonal capacity crunch.",
+      "n_train": 380,
+      "n_eval": 190,
+      "budget_usd": 24000.0,
+      "shift": "ed_surge"
+    },
+    {
+      "scenario_id": "INPAT-03",
+      "scenario_name": "Chronic High-Utilizer Polychronic Population",
+      "description": "Frequent ED utilizers with compounding comorbidity velocity and electrolyte derangements.",
+      "n_train": 360,
+      "n_eval": 180,
+      "budget_usd": 27000.0,
+      "shift": "high_utilizer"
+    },
+    {
+      "scenario_id": "INPAT-04",
+      "scenario_name": "Regional Bed-Capacity Constrained Network",
+      "description": "Severe acute bed navigation slot constraints requiring high specificity.",
+      "n_train": 360,
+      "n_eval": 180,
+      "budget_usd": 21000.0,
+      "shift": "capacity_crunch"
+    }
+  ]
+}

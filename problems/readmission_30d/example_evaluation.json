@@ -1,0 +1,12 @@
+{
+  "score": 6862.724767690498,
+  "insights": [
+    "[readmission_30d] Score=6,862.72 | Feasible=4/4 (Violations=0) | ROC-AUC=0.7141 vs Base=0.6306 (+0.0835, Target>0.70:PASS)",
+    "Clinical Metrics: PR-AUC=0.7129 | Sens@Spec80=0.4873 | Brier=0.2261 | TargetGate=2/4 scenarios | EvalTime=2005ms",
+    "Financial Value Impact: Actuarial Lift Value=$3,507,287 | Stage 2 Care Net ROI=$728,791 (36.6 events prevented)",
+    "READM-01 (OK): Score=7,022.7 | AUC=0.7371 (+0.0708 vs base) | PR-AUC=0.6987 | Sens=0.527 | NetROI=$199,241",
+    "READM-02 (OK): Score=7,405.3 | AUC=0.7573 (+0.0822 vs base) | PR-AUC=0.7897 | Sens=0.570 | NetROI=$210,799",
+    "READM-03 (OK): Score=6,578.4 | AUC=0.6721 (+0.0919 vs base) | PR-AUC=0.7110 | Sens=0.452 | NetROI=$172,325",
+    "READM-04 (OK): Score=6,444.5 | AUC=0.6899 (+0.0891 vs base) | PR-AUC=0.6523 | Sens=0.400 | NetROI=$146,427"
+  ]
+}

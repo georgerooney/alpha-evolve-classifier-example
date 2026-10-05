@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<!--
+ Copyright 2026 Google LLC
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; object-src 'none'; frame-ancestors 'self';" />
+  <title>AlphaEvolve Clinical Classifier — Clinical Portfolio &amp; Candidate Diagnostics</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #131b33;
+      --panel-alt: #0f162b;
+      --border: #26335d;
+      --text: #e8eefc;
+      --muted: #95a5cd;
+      --accent: #38bdf8;
+      --success: #34d399;
+      --warn: #fbbf24;
+      --danger: #f87171;
+      --purple: #c084fc;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 24px;
+      line-height: 1.45;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 16px;
+      margin-bottom: 22px;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    h1 { margin: 0; font-size: 1.45rem; }
+    h2 { margin: 0 0 12px 0; font-size: 1.15rem; }
+    .subtitle { color: var(--muted); font-size: 0.9rem; margin-top: 4px; }
+    .header-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 22px;
+    }
+    .kpi-label { color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .kpi-val { font-size: 1.5rem; font-weight: 700; margin-top: 6px; color: var(--accent); }
+    .kpi-val.green { color: var(--success); }
+    .controls {
+      display: flex;
+      gap: 22px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 210px;
+    }
+    label { font-size: 0.82rem; color: var(--muted); font-weight: 600; }
+    select, input[type="range"], input[type="text"] {
+      background: #0b1020;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 0.88rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 0.85rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 9px 10px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    th {
+      color: var(--muted);
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+      background: var(--panel);
+      z-index: 1;
+    }
+    tbody tr:hover {
+      background: rgba(56, 189, 248, 0.06);
+    }
+    .badge {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 0.73rem;
+      font-weight: 600;
+      background: rgba(52, 211, 153, 0.15);
+      color: var(--success);
+      white-space: nowrap;
+    }
+    .badge.warn {
+      background: rgba(251, 191, 36, 0.16);
+      color: var(--warn);
+    }
+    .badge.danger {
+      background: rgba(248, 113, 113, 0.16);
+      color: var(--danger);
+    }
+    .badge.info {
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+    }
+    .btn {
+      background: #17254a;
+      color: var(--accent);
+      border: 1px solid #2e4782;
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn:hover {
+      background: #1f3263;
+    }
+    .btn.active {
+      background: var(--accent);
+      color: #081021;
+      border-color: var(--accent);
+    }
+    .diag-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .pill-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .table-scroll {
+      max-height: 460px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.8rem;
+    }
+    .diff-sub {
+      color: var(--muted);
+      font-size: 0.76rem;
+      margin-top: 2px;
+    }
+    .inspector-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 12px;
+    }
+    .inspector-grid > div { min-width: 0; }
+    @media (max-width: 1100px) {
+      .inspector-grid { grid-template-columns: 1fr; }
+    }
+    pre.code-box {
+      background: var(--panel-alt);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      margin: 0;
+      overflow-x: auto;
+      max-height: 420px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.78rem;
+      color: #d7e3ff;
+      white-space: pre;
+    }
+    .arch-banner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .progress {
+      height: 10px;
+      background: var(--panel-alt);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      overflow: hidden;
+      margin: 6px 0;
+    }
+    .progress-fill {
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, var(--accent), var(--success));
+      transition: width 0.4s ease;
+    }
+    svg.chart {
+      width: 100%;
+      height: 240px;
+      background: var(--panel-alt);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .note { color: var(--muted); font-size: 0.8rem; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Google Cloud AlphaEvolve — Classifier Evolution Diagnostics</h1>
+      <div class="subtitle">Real-data track (UCI Diabetes 130, locked test vs. tuned LightGBM) • Synthetic Stage-2 portfolio (reference only) • Candidate diff inspector</div>
+    </div>
+    <div class="header-actions">
+      <a class="btn" href="/docs/aws_snowflake_split_cloud_architecture.svg" target="_blank" rel="noopener">Split-Cloud AWS Snowflake × GCP SVG</a>
+      <a class="btn" href="/docs/AWS_SNOWFLAKE_MIGRATION.md" target="_blank" rel="noopener">AWS/Snowflake Migration Guide</a>
+    </div>
+  </header>
+
+  <section class="card" id="real-card">
+    <div class="diag-toolbar">
+      <div>
+        <h2>Real-Data Track — Live AlphaEvolve Run</h2>
+        <div class="subtitle" id="real-meta">Loading…</div>
+      </div>
+      <div class="pill-group">
+        <label for="real-problem-select">Problem:</label>
+        <select id="real-problem-select"></select>
+        <span class="badge info" id="real-status-badge">—</span>
+      </div>
+    </div>
+    <div class="progress"><div class="progress-fill" id="real-progress-fill"></div></div>
+    <div class="subtitle" id="real-progress-text"></div>
+    <div class="kpi-grid" id="real-kpis" style="margin-top: 14px;"></div>
+    <div class="inspector-grid">
+      <div>
+        <div class="kpi-label" style="margin-bottom: 6px;">Fitness ROC-AUC per evaluated candidate (dots) and best-so-far (line)</div>
+        <svg class="chart" id="real-chart" viewBox="0 0 600 240" preserveAspectRatio="none" role="img" aria-label="Best-so-far fitness ROC-AUC"></svg>
+        <div class="note">Fitness = mean ROC-AUC over private-seed patient-grouped rounds. Differences under ~0.005 are round-to-round noise.</div>
+      </div>
+      <div>
+        <div class="kpi-label" style="margin-bottom: 6px;">Locked test split (finalists only) — paired bootstrap vs. tuned LightGBM</div>
+        <table>
+          <thead>
+            <tr><th>Arm</th><th>Test ROC-AUC</th><th>Δ vs tuned [95% CI]</th><th>p(Δ≤0)</th><th>Verdict</th></tr>
+          </thead>
+          <tbody id="locked-tbody"></tbody>
+        </table>
+        <div class="note" id="locked-note"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="arch-banner" style="margin-bottom: 12px;">
+      <h2 style="margin: 0;">Synthetic Stage-2 Portfolio (reference only)</h2>
+      <span class="badge warn">Toolkit encodes the synthetic generator — lift here is circular, not a performance claim</span>
+    </div>
+    <div class="kpi-grid" id="kpi-container"></div>
+    <div class="controls" style="margin-bottom: 12px;">
+      <div class="control-group">
+        <label for="model-select">Portfolio Scorecard Filter</label>
+        <select id="model-select"><option value="all">All synthetic models (aggregate)</option></select>
+      </div>
+      <div class="control-group">
+        <label for="member-scale">Member Cohort Volume Scale (<span id="scale-label">1.0x</span>)</label>
+        <input type="range" id="member-scale" min="0.5" max="5.0" step="0.5" value="1.0" />
+      </div>
+      <div class="control-group">
+        <label for="roi-scale">Actuarial Value per +1% AUC Lift (<span id="roi-label">1.0x</span>)</label>
+        <input type="range" id="roi-scale" min="0.5" max="2.5" step="0.25" value="1.0" />
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Model ID</th>
+          <th>Clinical Use Case</th>
+          <th>Legacy API AUC</th>
+          <th>Seed AUC</th>
+          <th>Reference Evolved AUC</th>
+          <th>Target Gate</th>
+          <th>PR-AUC</th>
+          <th>Sens@Spec80</th>
+          <th>Brier</th>
+          <th>Actuarial Lift ROI</th>
+          <th>Stage 2 Care Net ROI</th>
+        </tr>
+      </thead>
+      <tbody id="portfolio-tbody"></tbody>
+    </table>
+    <div class="note" id="portfolio-note"></div>
+  </section>
+
+  <section class="card">
+    <div class="diag-toolbar">
+      <div>
+        <h2>Candidate Evolution Run Diagnostics</h2>
+        <div class="subtitle" id="diag-run-meta">Loading…</div>
+      </div>
+      <div class="pill-group">
+        <label for="diag-problem-select">Inspect Run for Problem:</label>
+        <select id="diag-problem-select"></select>
+        <input type="text" id="cand-search" placeholder="Search candidate ID or diff..." />
+      </div>
+    </div>
+
+    <div class="pill-group" style="margin-bottom: 12px;" id="status-filter-bar">
+      <button type="button" class="btn active" data-status="ALL">All</button>
+      <button type="button" class="btn" data-status="GRADED">Graded</button>
+      <button type="button" class="btn" data-status="HARD_VIOLATION">Hard Violations</button>
+      <button type="button" class="btn" data-status="RUNTIME_ERROR">Runtime Errors</button>
+      <button type="button" class="btn" data-status="PENDING">Pending</button>
+    </div>
+
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Candidate ID</th>
+            <th>Gen</th>
+            <th>Status</th>
+            <th>What's Different (vs. Seed Program)</th>
+            <th>Fitness Score</th>
+            <th>ROC-AUC (Δ Seed)</th>
+            <th>PR-AUC</th>
+            <th id="th-col-a">Sens@Spec80</th>
+            <th>Brier</th>
+            <th id="th-col-b">Stage 2 Net ROI</th>
+            <th>Source Code</th>
+          </tr>
+        </thead>
+        <tbody id="candidates-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card" id="source-inspector-card">
+    <div class="diag-toolbar">
+      <div>
+        <h2 id="inspector-title">Candidate Source Code &amp; Unified Diff Inspector</h2>
+        <div class="subtitle" id="inspector-subtitle">Select any candidate row above to inspect its exact code mutation and Python source</div>
+      </div>
+      <div class="pill-group">
+        <a id="inspector-raw-link" class="btn" href="#" target="_blank" rel="noopener">Open Raw .py in New Tab</a>
+      </div>
+    </div>
+    <div class="inspector-grid">
+      <div>
+        <div class="kpi-label" style="margin-bottom: 6px;">Unified Diff (initial_program.py → candidate.py)</div>
+        <pre class="code-box" id="inspector-diff"></pre>
+      </div>
+      <div>
+        <div class="kpi-label" style="margin-bottom: 6px;">Full Candidate Python Source</div>
+        <pre class="code-box" id="inspector-code"></pre>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    // All data comes from the local server. There is deliberately no hardcoded/fabricated fallback: an offline or
+    // empty state is shown as such, so nothing on this page can be mistaken for a real result.
+    const POLL_MS = 15000;
+    const SVG_NS = "http://www.w3.org/2000/svg";
+    const SOURCE_LABELS = {
+      live_alphaevolve_run: "Finished AlphaEvolve run (candidates.json)",
+      live_alphaevolve_api: "LIVE AlphaEvolve API (auto-refresh every 15 s)",
+      reference_evolution_trace: "SYNTHETIC reference trace (interpolated, not a real run)",
+      none: "No AlphaEvolve run found for this problem yet"
+    };
+    const TRACK_COLS = {
+      synthetic: ["Sens@Spec80", "Stage 2 Net ROI"],
+      real_data: ["Worst Subgroup AUC Gap", "Eval Time"]
+    };
+
+    let PROBLEMS = [];
+    let PORTFOLIO_DATA = [];
+    let activeCandidates = [];
+    let activeSeedAuc = null;
+    let activeStatusFilter = "ALL";
+    let activeProblemId = null;
+    let realTimer = null;
+    let diagTimer = null;
+
+    function el(tag, cls, text) {
+      const e = document.createElement(tag);
+      if (cls) e.setAttribute("class", cls);
+      if (text !== undefined && text !== null) e.textContent = text;
+      return e;
+    }
+    function svgEl(tag, attrs, text) {
+      const e = document.createElementNS(SVG_NS, tag);
+      Object.keys(attrs).forEach(function (k) { e.setAttribute(k, String(attrs[k])); });
+      if (text) e.textContent = text;
+      return e;
+    }
+    function isNum(v) { return typeof v === "number" && isFinite(v); }
+    function fmt(v, d) { return isNum(v) ? v.toFixed(d === undefined ? 4 : d) : "—"; }
+    function signed(v, d) { return isNum(v) ? (v >= 0 ? "+" : "") + v.toFixed(d === undefined ? 4 : d) : "—"; }
+    function formatUsd(val) {
+      const sign = val < 0 ? "-" : "";
+      return sign + "$" + Math.round(Math.abs(val)).toLocaleString("en-US");
+    }
+    function trackOf(pid) {
+      const p = PROBLEMS.find(function (x) { return x.problem_id === pid; });
+      return p ? p.track : "synthetic";
+    }
+    function getJson(url) {
+      return fetch(url).then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (body) {
+          if (!r.ok) throw new Error(body.error || ("HTTP " + r.status));
+          return body;
+        });
+      });
+    }
+    function createKpiCard(label, valueText, tone, sub) {
+      const card = el("div", "card");
+      card.style.marginBottom = "0";
+      card.appendChild(el("div", "kpi-label", label));
+      card.appendChild(el("div", tone ? "kpi-val " + tone : "kpi-val", valueText));
+      if (sub) card.appendChild(el("div", "diff-sub", sub));
+      return card;
+    }
+    function fillSelect(select, items, valueOf, labelOf) {
+      select.replaceChildren.apply(select, items.map(function (it) {
+        const o = el("option", null, labelOf(it));
+        o.value = valueOf(it);
+        return o;
+      }));
+    }
+
+    // ---------------- Real-data track ----------------
+    function renderRealCard(card, live) {
+      const evaluated = live.programs_evaluated || 0;
+      const maxP = live.max_programs || 0;
+      const counts = live.status_counts || {};
+      const badge = document.getElementById("real-status-badge");
+      if (!live.experiment_name) {
+        badge.setAttribute("class", "badge warn");
+        badge.textContent = "NO RUN";
+      } else if (live.finished) {
+        badge.setAttribute("class", "badge");
+        badge.textContent = "FINISHED";
+      } else {
+        badge.setAttribute("class", "badge info");
+        badge.textContent = "RUNNING";
+      }
+
+      let meta = live.experiment_name
+        ? "Experiment " + live.experiment_id + " • fetched " + (live.fetched_at || "—")
+        : "No run pointer under artifacts/runs/" + card.problem_id + "/ — start one with run_experiment.py --problem " + card.problem_id;
+      if (live.error) meta += " • API error" + (live.stale ? " (showing last good snapshot)" : "") + ": " + live.error;
+      document.getElementById("real-meta").textContent = card.title + " — " + meta;
+
+      document.getElementById("real-progress-fill").style.width = (maxP ? Math.min(100, 100 * evaluated / maxP) : 0) + "%";
+      document.getElementById("real-progress-text").textContent =
+        evaluated + " / " + (maxP || "?") + " evaluated • " + (live.programs_listed || 0) + " generated • " +
+        (counts.GRADED || 0) + " graded • " + (counts.HARD_VIOLATION || 0) + " violations • " +
+        (counts.RUNTIME_ERROR || 0) + " runtime errors";
+
+      const seed = live.seed_roc_auc;
+      const best = live.best_roc_auc;
+      const tunedFit = card.tuned_fitness_auc;
+      document.getElementById("real-kpis").replaceChildren(
+        createKpiCard("Seed fitness AUC", fmt(seed), null, "initial_program.py"),
+        createKpiCard("AlphaEvolve best fitness AUC", fmt(best), "green",
+          (live.best_candidate_id || "—") + " • Δ seed " + (isNum(best) && isNum(seed) ? signed(best - seed) : "—")),
+        createKpiCard("Tuned LightGBM fitness AUC", fmt(tunedFit), null,
+          isNum(tunedFit) ? "random-search baseline (" + card.locked_test_report + ")" : "pending: run scripts/tabular_report.py"),
+        createKpiCard("Best vs tuned LightGBM (fitness)", isNum(best) && isNum(tunedFit) ? signed(best - tunedFit) : "—",
+          isNum(best) && isNum(tunedFit) && best > tunedFit ? "green" : null, "the bar AlphaEvolve must clear"),
+        createKpiCard("Tuned LightGBM locked-test AUC", fmt(card.tuned_test_auc), null, "finalists only, never in the loop")
+      );
+      renderLockedTable(card, live);
+    }
+
+    function renderLockedTable(card, live) {
+      const tbody = document.getElementById("locked-tbody");
+      const arms = (card.locked_test && card.locked_test.arms) || [];
+      tbody.replaceChildren();
+      arms.forEach(function (a) {
+        const tr = el("tr");
+        const isRef = a.arm === "tuned_lightgbm";
+        let verdict = ["reference", "badge info"];
+        if (!isRef) {
+          if (a.vs_tuned_ci_low > 0) verdict = ["beats tuned", "badge"];
+          else if (a.vs_tuned_ci_high < 0) verdict = ["worse than tuned", "badge danger"];
+          else verdict = ["not significant", "badge warn"];
+        }
+        [
+          el("td", "mono", a.arm),
+          el("td", null, fmt(a.test_auc)),
+          el("td", "mono", isRef ? "—" : signed(a.vs_tuned_delta) + " [" + signed(a.vs_tuned_ci_low) + ", " + signed(a.vs_tuned_ci_high) + "]"),
+          el("td", null, isRef ? "—" : fmt(a.vs_tuned_p_value_one_sided, 3))
+        ].forEach(function (td) { tr.appendChild(td); });
+        const tdV = el("td");
+        tdV.appendChild(el("span", verdict[1], verdict[0]));
+        tr.appendChild(tdV);
+        tbody.appendChild(tr);
+      });
+      const note = document.getElementById("locked-note");
+      if (arms.length) {
+        note.textContent = "Report " + card.locked_test_report + " • n=" + (card.locked_test.locked_test_n || 0).toLocaleString("en-US") +
+          " encounters • commit " + String(card.locked_test.git_commit || "—").slice(0, 8);
+      } else {
+        const exp = live.experiment_id || "<exp_id>";
+        note.textContent = "No locked-test report yet. When the run finishes: scripts/tabular_report.py --problem " + card.problem_id +
+          " --candidates artifacts/runs/" + card.problem_id + "/" + exp + "/rank{1,2,3}.py";
+      }
+    }
+
+    function renderChart(live, card) {
+      const svg = document.getElementById("real-chart");
+      svg.replaceChildren();
+      const W = 600, H = 240, L = 46, R = 10, T = 12, B = 26;
+      const graded = (live.trace || []).filter(function (p) { return p.status === "GRADED" && p.roc_auc > 0; });
+      if (!graded.length) {
+        svg.appendChild(svgEl("text", { x: W / 2, y: H / 2, fill: "#95a5cd", "text-anchor": "middle", "font-size": 13 },
+          live.experiment_name ? "Waiting for the first graded candidate…" : "No run yet"));
+        return;
+      }
+      const refs = [[live.seed_roc_auc, "seed", "#95a5cd"], [card.tuned_fitness_auc, "tuned LightGBM", "#fbbf24"]]
+        .filter(function (r) { return isNum(r[0]); });
+      const ys = graded.map(function (p) { return p.roc_auc; }).concat(refs.map(function (r) { return r[0]; }));
+      const lo = Math.min.apply(null, ys) - 0.003, hi = Math.max.apply(null, ys) + 0.003;
+      const n = Math.max(live.max_programs || 0, (live.trace || []).length, 2);
+      const x = function (i) { return L + (W - L - R) * i / (n - 1); };
+      const y = function (v) { return T + (H - T - B) * (1 - (v - lo) / (hi - lo)); };
+
+      [lo + 0.003, (lo + hi) / 2, hi - 0.003].forEach(function (v) {
+        svg.appendChild(svgEl("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), stroke: "#26335d" }));
+        svg.appendChild(svgEl("text", { x: L - 4, y: y(v) + 4, fill: "#95a5cd", "text-anchor": "end", "font-size": 10 }, v.toFixed(3)));
+      });
+      svg.appendChild(svgEl("text", { x: W - R, y: H - 6, fill: "#95a5cd", "text-anchor": "end", "font-size": 10 },
+        "evaluated candidates (creation order) → " + n));
+      refs.forEach(function (r) {
+        svg.appendChild(svgEl("line", { x1: L, x2: W - R, y1: y(r[0]), y2: y(r[0]), stroke: r[2], "stroke-dasharray": "5 4" }));
+        svg.appendChild(svgEl("text", { x: W - R - 2, y: y(r[0]) - 4, fill: r[2], "text-anchor": "end", "font-size": 10 }, r[1] + " " + r[0].toFixed(4)));
+      });
+      const idx = {};
+      (live.trace || []).forEach(function (p, i) { idx[p.candidate_id] = i; });
+      graded.forEach(function (p) {
+        const dot = svgEl("circle", { cx: x(idx[p.candidate_id]), cy: y(p.roc_auc), r: 3, fill: "#38bdf8", "fill-opacity": 0.45 });
+        dot.appendChild(svgEl("title", {}, p.candidate_id + ": " + p.roc_auc.toFixed(4)));
+        svg.appendChild(dot);
+      });
+      const pts = (live.trace || []).map(function (p, i) { return isNum(p.best_roc_auc) ? x(i) + "," + y(p.best_roc_auc) : null; })
+        .filter(Boolean).join(" ");
+      svg.appendChild(svgEl("polyline", { points: pts, fill: "none", stroke: "#34d399", "stroke-width": 2 }));
+    }
+
+    function loadRealData() {
+      clearTimeout(realTimer);
+      const pid = document.getElementById("real-problem-select").value;
+      if (!pid) return;
+      Promise.all([getJson("/api/real_data?problem_id=" + encodeURIComponent(pid)),
+                   getJson("/api/live_run?problem_id=" + encodeURIComponent(pid))])
+        .then(function (res) {
+          renderRealCard(res[0], res[1]);
+          renderChart(res[1], res[0]);
+          if (res[1].experiment_name && !res[1].finished) realTimer = setTimeout(loadRealData, POLL_MS);
+        })
+        .catch(function (err) {
+          document.getElementById("real-meta").textContent = "Server unavailable: " + err.message;
+        });
+    }
+
+    // ---------------- Synthetic portfolio ----------------
+    function renderDashboard() {
+      const selected = document.getElementById("model-select").value;
+      const memberMult = parseFloat(document.getElementById("member-scale").value);
+      const roiMult = parseFloat(document.getElementById("roi-scale").value);
+      document.getElementById("scale-label").textContent = memberMult.toFixed(1) + "x";
+      document.getElementById("roi-label").textContent = roiMult.toFixed(2) + "x";
+
+      const rows = selected === "all" ? PORTFOLIO_DATA : PORTFOLIO_DATA.filter(function (d) { return d.id === selected; });
+      const tbody = document.getElementById("portfolio-tbody");
+      tbody.replaceChildren();
+      if (!rows.length) {
+        document.getElementById("kpi-container").replaceChildren();
+        return;
+      }
+      let sumBase = 0, sumEvol = 0, sumActRoi = 0, sumStage2 = 0, sumPrev = 0;
+      rows.forEach(function (r) {
+        sumBase += r.baseAuc;
+        sumEvol += r.evolAuc;
+        const scaledAct = r.actuarialRoi * memberMult * roiMult;
+        const scaledSt2 = r.stage2Roi * memberMult;
+        sumActRoi += scaledAct;
+        sumStage2 += scaledSt2;
+        sumPrev += r.prevented * memberMult;
+
+        const tr = el("tr");
+        const pass = r.evolAuc >= r.targetAuc;
+        [
+          r.id, r.title, fmt(r.baseAuc), fmt(r.seedAuc), fmt(r.evolAuc) + " (" + signed(r.evolAuc - r.baseAuc) + ")",
+          (pass ? "PASS" : "FAIL") + " (≥" + r.targetAuc.toFixed(2) + ")", fmt(r.prAuc), fmt(r.sens80), fmt(r.brier),
+          formatUsd(scaledAct), formatUsd(scaledSt2)
+        ].forEach(function (c, idx) {
+          const td = el("td", idx === 0 ? "mono" : null);
+          if (idx === 5) td.appendChild(el("span", pass ? "badge" : "badge danger", c));
+          else td.textContent = c;
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+      const meanBase = sumBase / rows.length, meanEvol = sumEvol / rows.length;
+      document.getElementById("kpi-container").replaceChildren(
+        createKpiCard("Mean reference-evolved ROC-AUC", fmt(meanEvol) + " (" + signed((meanEvol - meanBase) * 100, 1) + " pts)"),
+        createKpiCard("Legacy Baseline API AUC", fmt(meanBase)),
+        createKpiCard("Actuarial AUC Uplift Value (synthetic)", formatUsd(sumActRoi), "green"),
+        createKpiCard("Stage 2 Net ROI (synthetic)", formatUsd(sumStage2), "green"),
+        createKpiCard("Hospitalizations Prevented (synthetic)", sumPrev.toFixed(1) + " events", "green")
+      );
+    }
+
+    function loadPortfolio() {
+      document.getElementById("portfolio-note").textContent = "Evaluating synthetic portfolio on the server…";
+      getJson("/api/portfolio")
+        .then(function (snap) {
+          PORTFOLIO_DATA = Object.keys(snap.problems).map(function (pid) {
+            const p = snap.problems[pid];
+            return {
+              id: p.problem_id, title: p.title, baseAuc: p.baseline_roc_auc, seedAuc: p.seed_roc_auc,
+              evolAuc: p.evolved_roc_auc, targetAuc: p.target_auc, prAuc: p.evolved_pr_auc,
+              sens80: p.evolved_sens_at_spec80, brier: p.evolved_brier, actuarialRoi: p.actuarial_auc_roi_usd,
+              stage2Roi: p.stage2_net_savings_usd, prevented: p.prevented_events
+            };
+          });
+          const sel = document.getElementById("model-select");
+          const allOpt = el("option", null, "All synthetic models (aggregate)");
+          allOpt.value = "all";
+          sel.replaceChildren(allOpt);
+          PORTFOLIO_DATA.forEach(function (d) {
+            const o = el("option", null, d.title);
+            o.value = d.id;
+            sel.appendChild(o);
+          });
+          document.getElementById("portfolio-note").textContent =
+            "Reference program artifacts/best_evolved_program.py vs. seed, canonical (unperturbed) synthetic cohorts.";
+          renderDashboard();
+        })
+        .catch(function (err) {
+          document.getElementById("portfolio-note").textContent = "Server unavailable: " + err.message;
+        });
+    }
+
+    // ---------------- Candidate diagnostics ----------------
+    function updateStatusFilterButtons() {
+      const counts = { ALL: activeCandidates.length };
+      activeCandidates.forEach(function (c) { counts[c.status] = (counts[c.status] || 0) + 1; });
+      const names = { ALL: "All", GRADED: "Graded", HARD_VIOLATION: "Hard Violations", RUNTIME_ERROR: "Runtime Errors", PENDING: "Pending" };
+      document.querySelectorAll("#status-filter-bar button").forEach(function (btn) {
+        const st = btn.getAttribute("data-status");
+        btn.setAttribute("class", st === activeStatusFilter ? "btn active" : "btn");
+        btn.textContent = names[st] + " (" + (counts[st] || 0) + ")";
+      });
+    }
+
+    function scoreText(s) {
+      if (!isNum(s)) return "—";
+      if (s <= -1e9) return "FAIL";
+      return Math.abs(s) >= 1000 ? Math.round(s).toLocaleString("en-US") : s.toFixed(3);
+    }
+
+    function renderCandidatesTable() {
+      updateStatusFilterButtons();
+      const real = trackOf(activeProblemId) === "real_data";
+      const cols = TRACK_COLS[real ? "real_data" : "synthetic"];
+      document.getElementById("th-col-a").textContent = cols[0];
+      document.getElementById("th-col-b").textContent = cols[1];
+
+      const q = (document.getElementById("cand-search").value || "").toLowerCase().trim();
+      const tbody = document.getElementById("candidates-tbody");
+      tbody.replaceChildren();
+      activeCandidates.filter(function (c) {
+        if (activeStatusFilter !== "ALL" && c.status !== activeStatusFilter) return false;
+        return !q || c.candidate_id.toLowerCase().indexOf(q) !== -1 || String(c.what_changed).toLowerCase().indexOf(q) !== -1;
+      }).forEach(function (c) {
+        const tr = el("tr");
+        tr.appendChild(el("td", null, "#" + c.rank));
+        tr.appendChild(el("td", "mono", c.candidate_id));
+        tr.appendChild(el("td", null, "G" + c.generation));
+
+        const tdStatus = el("td");
+        const tone = { GRADED: "badge", HARD_VIOLATION: "badge warn", PENDING: "badge info" }[c.status] || "badge danger";
+        tdStatus.appendChild(el("span", tone, c.status));
+        tr.appendChild(tdStatus);
+
+        const tdDiff = el("td");
+        tdDiff.appendChild(el("div", null, c.what_changed));
+        tdDiff.appendChild(el("div", "diff-sub mono",
+          "+" + c.added_lines + " / -" + c.removed_lines + " lines • EVOLVE-BLOCK: " + c.evolve_block_lines + "L"));
+        tr.appendChild(tdDiff);
+
+        tr.appendChild(el("td", "mono", scoreText(c.score)));
+        const delta = isNum(c.auc_uplift_vs_seed) ? c.auc_uplift_vs_seed
+          : (isNum(activeSeedAuc) && c.roc_auc > 0 ? c.roc_auc - activeSeedAuc : null);
+        tr.appendChild(el("td", null, c.roc_auc > 0 ? fmt(c.roc_auc) + " (" + signed(delta) + ")" : "—"));
+        tr.appendChild(el("td", null, c.pr_auc > 0 ? fmt(c.pr_auc) : "—"));
+        tr.appendChild(el("td", null, real ? fmt(c.subgroup_gap, 3) : (c.sens_at_spec80 > 0 ? fmt(c.sens_at_spec80) : "—")));
+        tr.appendChild(el("td", null, c.roc_auc > 0 ? fmt(c.brier) : "—"));
+        tr.appendChild(el("td", null, real ? (c.eval_ms > 0 ? (c.eval_ms / 1000).toFixed(1) + " s" : "—")
+          : formatUsd(c.stage2_net_savings_usd || 0)));
+
+        const tdSrc = el("td");
+        const btnInspect = el("button", "btn", "Diff & Code");
+        btnInspect.setAttribute("type", "button");
+        btnInspect.style.marginRight = "6px";
+        btnInspect.addEventListener("click", function () { inspectCandidateSource(c.problem_id, c.candidate_id, c); });
+        const linkRaw = el("a", "btn", ".py");
+        linkRaw.setAttribute("href", c.source_url + "&format=raw");
+        linkRaw.setAttribute("target", "_blank");
+        linkRaw.setAttribute("rel", "noopener");
+        tdSrc.appendChild(btnInspect);
+        tdSrc.appendChild(linkRaw);
+        tr.appendChild(tdSrc);
+        tbody.appendChild(tr);
+      });
+    }
+
+    function inspectCandidateSource(problemId, candidateId, summaryObj) {
+      const qs = "problem_id=" + encodeURIComponent(problemId) + "&candidate_id=" + encodeURIComponent(candidateId);
+      document.getElementById("inspector-title").textContent = "Candidate Source & Diff Inspector — " + candidateId + " (" + problemId + ")";
+      document.getElementById("inspector-subtitle").textContent = summaryObj
+        ? "Mutation: " + summaryObj.what_changed + " (+" + summaryObj.added_lines + " / -" + summaryObj.removed_lines + " lines)" : "";
+      document.getElementById("inspector-raw-link").setAttribute("href", "/api/candidate_source?" + qs + "&format=raw");
+      getJson("/api/candidate_source?" + qs)
+        .then(function (payload) {
+          document.getElementById("inspector-diff").textContent = payload.unified_diff;
+          document.getElementById("inspector-code").textContent = payload.code;
+        })
+        .catch(function (err) {
+          document.getElementById("inspector-diff").textContent = "Source unavailable: " + err.message;
+          document.getElementById("inspector-code").textContent = "";
+        });
+    }
+
+    function loadCandidatesForProblem(problemId, isRefresh) {
+      clearTimeout(diagTimer);
+      activeProblemId = problemId;
+      getJson("/api/candidates?problem_id=" + encodeURIComponent(problemId))
+        .then(function (payload) {
+          if (activeProblemId !== problemId) return;  // user switched problems mid-request
+          activeCandidates = payload.candidates || [];
+          const seedRow = activeCandidates.find(function (c) {
+            return c.status === "GRADED" && c.added_lines === 0 && c.removed_lines === 0;
+          });
+          activeSeedAuc = seedRow ? seedRow.roc_auc : null;
+          document.getElementById("diag-run-meta").textContent =
+            (SOURCE_LABELS[payload.source] || payload.source) + " • Experiment: " + (payload.experiment_id || "—") +
+            " • " + payload.total_candidates + " candidates";
+          renderCandidatesTable();
+          if (!isRefresh && activeCandidates.length > 0) {
+            inspectCandidateSource(problemId, activeCandidates[0].candidate_id, activeCandidates[0]);
+          }
+          if (payload.source === "live_alphaevolve_api") {
+            diagTimer = setTimeout(function () { loadCandidatesForProblem(problemId, true); }, POLL_MS);
+          }
+        })
+        .catch(function (err) {
+          activeCandidates = [];
+          renderCandidatesTable();
+          document.getElementById("diag-run-meta").textContent = "Server unavailable: " + err.message;
+        });
+    }
+
+    // ---------------- Wiring ----------------
+    function init() {
+      getJson("/api/problems")
+        .then(function (problems) {
+          PROBLEMS = problems;
+          const realProblems = problems.filter(function (p) { return p.track === "real_data"; });
+          fillSelect(document.getElementById("real-problem-select"), realProblems,
+            function (p) { return p.problem_id; }, function (p) { return p.problem_id + " — " + p.title; });
+          const ordered = realProblems.concat(problems.filter(function (p) { return p.track !== "real_data"; }));
+          fillSelect(document.getElementById("diag-problem-select"), ordered, function (p) { return p.problem_id; },
+            function (p) { return "[" + (p.track === "real_data" ? "real data" : "synthetic") + "] " + p.problem_id; });
+          if (realProblems.length) loadRealData();
+          else document.getElementById("real-meta").textContent = "No real-data problems configured.";
+          if (ordered.length) loadCandidatesForProblem(ordered[0].problem_id);
+        })
+        .catch(function (err) {
+          document.getElementById("real-meta").textContent = "Server unavailable: " + err.message +
+            ". Start it with: python simulator/portfolio_simulator.py --serve";
+        });
+      loadPortfolio();
+    }
+
+    document.getElementById("real-problem-select").addEventListener("change", loadRealData);
+    document.getElementById("model-select").addEventListener("change", function (e) {
+      renderDashboard();
+      if (e.target.value !== "all") {
+        document.getElementById("diag-problem-select").value = e.target.value;
+        loadCandidatesForProblem(e.target.value);
+      }
+    });
+    document.getElementById("member-scale").addEventListener("input", renderDashboard);
+    document.getElementById("roi-scale").addEventListener("input", renderDashboard);
+    document.getElementById("diag-problem-select").addEventListener("change", function (e) {
+      loadCandidatesForProblem(e.target.value);
+    });
+    document.getElementById("cand-search").addEventListener("input", renderCandidatesTable);
+    document.querySelectorAll("#status-filter-bar button").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        activeStatusFilter = btn.getAttribute("data-status");
+        renderCandidatesTable();
+      });
+    });
+
+    init();
+  </script>
+</body>
+</html>

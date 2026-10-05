@@ -1,0 +1,50 @@
+{
+  "problem_id": "readmission_30d",
+  "title": "30-Day All-Cause Hospital Readmission Reduction (CMS HRRP)",
+  "horizon_days": 30,
+  "target_auc": 0.7,
+  "target_specificity": 0.8,
+  "min_sensitivity_floor": 0.55,
+  "event_cost_usd": 16800.0,
+  "hrrp_penalty_multiplier": 1.35,
+  "roi_per_1pct_auc_usd": 420000.0,
+  "base_seed": 11000,
+  "scenarios": [
+    {
+      "scenario_id": "READM-01",
+      "scenario_name": "Medicare HRRP General Med/Surg Discharges",
+      "description": "High-volume general medicine and surgical discharges subject to CMS HRRP penalties.",
+      "n_train": 360,
+      "n_eval": 180,
+      "budget_usd": 28000.0,
+      "shift": "standard"
+    },
+    {
+      "scenario_id": "READM-02",
+      "scenario_name": "High-SDoH Deprivation & Medication Non-Adherence Cohort",
+      "description": "Safety-net and high social vulnerability discharges with post-discharge pharmacy gaps.",
+      "n_train": 340,
+      "n_eval": 170,
+      "budget_usd": 26000.0,
+      "shift": "high_sdoh"
+    },
+    {
+      "scenario_id": "READM-03",
+      "scenario_name": "Multi-Morbid Diabetic & Renal Complex Cohort",
+      "description": "Patients with concurrent CKD and glycemic instability where linear claims models miscalibrate.",
+      "n_train": 320,
+      "n_eval": 160,
+      "budget_usd": 25000.0,
+      "shift": "renal_metabolic"
+    },
+    {
+      "scenario_id": "READM-04",
+      "scenario_name": "Post-Acute SNF & Home Health Transition Cohort",
+      "description": "Complex transitions to skilled nursing and home health under tight RN care-management capacity.",
+      "n_train": 320,
+      "n_eval": 160,
+      "budget_usd": 22000.0,
+      "shift": "snf_transition"
+    }
+  ]
+}

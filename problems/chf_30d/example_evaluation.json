@@ -1,0 +1,12 @@
+{
+  "score": 7789.11690033005,
+  "insights": [
+    "[chf_30d] Score=7,789.12 | Feasible=4/4 (Violations=0) | ROC-AUC=0.7799 vs Base=0.6694 (+0.1105, Target>0.76:PASS)",
+    "Clinical Metrics: PR-AUC=0.8711 | Sens@Spec80=0.6138 | Brier=0.2141 | TargetGate=2/4 scenarios | EvalTime=1858ms",
+    "Financial Value Impact: Actuarial Lift Value=$5,415,690 | Stage 2 Care Net ROI=$993,222 (43.4 events prevented)",
+    "CHF-01 (OK): Score=7,469.9 | AUC=0.7378 (+0.0225 vs base) | PR-AUC=0.8706 | Sens=0.559 | NetROI=$260,185",
+    "CHF-02 (OK): Score=7,937.0 | AUC=0.7948 (+0.1487 vs base) | PR-AUC=0.9011 | Sens=0.604 | NetROI=$261,510",
+    "CHF-03 (OK): Score=8,262.7 | AUC=0.8436 (+0.1499 vs base) | PR-AUC=0.8721 | Sens=0.705 | NetROI=$244,049",
+    "CHF-04 (OK): Score=7,486.9 | AUC=0.7436 (+0.1209 vs base) | PR-AUC=0.8409 | Sens=0.588 | NetROI=$227,478"
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "problem_id": "diabetes130_readmit30",
+  "task_type": "tabular_classification",
+  "title": "Diabetes 130-US Hospitals: 30-Day Readmission (real data, UCI)",
+  "label_description": "1 if the encounter was followed by an inpatient readmission within 30 days (readmitted == '<30'), else 0",
+  "data_path": "data/diabetes130/diabetic_data.csv",
+  "label_column": "readmitted",
+  "positive_values": ["<30"],
+  "group_column": "patient_nbr",
+  "id_columns": ["encounter_id"],
+  "missing_values": ["?"],
+  "exclude_rows": {"discharge_disposition_id": ["11", "13", "14", "19", "20", "21"]},
+  "numeric_columns": [
+    "time_in_hospital", "num_lab_procedures", "num_procedures", "num_medications",
+    "number_outpatient", "number_emergency", "number_inpatient", "number_diagnoses"
+  ],
+  "categorical_columns": [
+    "race", "gender", "age", "weight", "admission_type_id", "discharge_disposition_id", "admission_source_id",
+    "payer_code", "medical_specialty", "diag_1", "diag_2", "diag_3", "max_glu_serum", "A1Cresult",
+    "metformin", "repaglinide", "nateglinide", "chlorpropamide", "glimepiride", "acetohexamide", "glipizide",
+    "glyburide", "tolbutamide", "pioglitazone", "rosiglitazone", "acarbose", "miglitol", "troglitazone",
+    "tolazamide", "examide", "citoglipton", "insulin", "glyburide-metformin", "glipizide-metformin",
+    "glimepiride-pioglitazone", "metformin-rosiglitazone", "metformin-pioglitazone", "change", "diabetesMed"
+  ],
+  "subgroup_columns": ["race", "gender", "age"],
+  "partition_salt": "diabetes130-readmit30-v1",
+  "test_fraction": 0.2,
+  "selection_fraction": 0.2,
+  "n_rounds": 3,
+  "train_rows": 20000,
+  "timeout_seconds": 120
+}

@@ -1,0 +1,12 @@
+{
+  "score": 7464.263469568708,
+  "insights": [
+    "[inpatient_admission] Score=7,464.26 | Feasible=4/4 (Violations=0) | ROC-AUC=0.7739 vs Base=0.6528 (+0.1211, Target>0.78:BELOW_TARGET)",
+    "Clinical Metrics: PR-AUC=0.7722 | Sens@Spec80=0.5792 | Brier=0.2093 | TargetGate=2/4 scenarios | EvalTime=1987ms",
+    "Financial Value Impact: Actuarial Lift Value=$6,175,951 | Stage 2 Care Net ROI=$482,168 (41.1 events prevented)",
+    "INPAT-01 (OK): Score=7,584.7 | AUC=0.7855 (+0.0729 vs base) | PR-AUC=0.7832 | Sens=0.595 | NetROI=$148,867",
+    "INPAT-02 (OK): Score=7,347.3 | AUC=0.7734 (+0.0962 vs base) | PR-AUC=0.7427 | Sens=0.557 | NetROI=$104,887",
+    "INPAT-03 (OK): Score=8,031.6 | AUC=0.8140 (+0.1962 vs base) | PR-AUC=0.8333 | Sens=0.708 | NetROI=$132,289",
+    "INPAT-04 (OK): Score=6,893.4 | AUC=0.7226 (+0.1191 vs base) | PR-AUC=0.7296 | Sens=0.457 | NetROI=$96,125"
+  ]
+}

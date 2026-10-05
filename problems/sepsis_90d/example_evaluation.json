@@ -1,0 +1,12 @@
+{
+  "score": 7904.631930567817,
+  "insights": [
+    "[sepsis_90d] Score=7,904.63 | Feasible=4/4 (Violations=0) | ROC-AUC=0.7973 vs Base=0.6870 (+0.1103, Target>0.80:BELOW_TARGET)",
+    "Clinical Metrics: PR-AUC=0.8615 | Sens@Spec80=0.6365 | Brier=0.1953 | TargetGate=1/4 scenarios | EvalTime=1901ms",
+    "Financial Value Impact: Actuarial Lift Value=$7,497,188 | Stage 2 Care Net ROI=$1,455,802 (48.0 events prevented)",
+    "SEPSIS-01 (OK): Score=7,571.9 | AUC=0.7865 (+0.0152 vs base) | PR-AUC=0.7932 | Sens=0.562 | NetROI=$364,978",
+    "SEPSIS-02 (OK): Score=7,935.4 | AUC=0.7959 (+0.1175 vs base) | PR-AUC=0.8806 | Sens=0.635 | NetROI=$391,127",
+    "SEPSIS-03 (OK): Score=7,969.4 | AUC=0.7898 (+0.1276 vs base) | PR-AUC=0.9047 | Sens=0.638 | NetROI=$366,107",
+    "SEPSIS-04 (OK): Score=8,141.9 | AUC=0.8169 (+0.1807 vs base) | PR-AUC=0.8673 | Sens=0.711 | NetROI=$333,590"
+  ]
+}

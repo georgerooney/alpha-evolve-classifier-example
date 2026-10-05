@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 620" width="100%" height="100%" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#38bdf8" />
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#34d399" />
+    </marker>
+    <marker id="arrow-amber" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#fbbf24" />
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1120" height="620" rx="16" fill="#0b1020" />
+
+  <!-- Title Banner -->
+  <text x="40" y="42" fill="#e8eefc" font-size="20" font-weight="700">Google Cloud AlphaEvolve — Split-Cloud Architecture (AWS Snowflake + GCP AlphaEvolve)</text>
+  <text x="40" y="66" fill="#95a5cd" font-size="13">Zero PHI/PII Data Egress: Patient cohorts &amp; model training stay 100% inside AWS/Snowflake; only ~5 KB Python source code &amp; scalar AUC metrics cross to GCP</text>
+
+  <!-- AWS Trust Boundary -->
+  <rect x="32" y="90" width="660" height="495" rx="14" fill="#111930" stroke="#f59e0b" stroke-width="2" stroke-dasharray="8 4" />
+  <rect x="48" y="78" width="355" height="24" rx="6" fill="#f59e0b" />
+  <text x="60" y="95" fill="#0b1020" font-size="12" font-weight="700">ENTERPRISE AWS VPC / SNOWFLAKE BOUNDARY (PHI STAYS HERE)</text>
+
+  <!-- GCP Trust Boundary -->
+  <rect x="740" y="90" width="348" height="495" rx="14" fill="#111930" stroke="#38bdf8" stroke-width="2" stroke-dasharray="8 4" />
+  <rect x="756" y="78" width="290" height="24" rx="6" fill="#38bdf8" />
+  <text x="768" y="95" fill="#0b1020" font-size="12" font-weight="700">GOOGLE CLOUD PLATFORM (CODE MUTATION ONLY)</text>
+
+  <!-- Box 1: Snowflake on AWS -->
+  <rect x="56" y="124" width="270" height="175" rx="10" fill="#172342" stroke="#2dd4bf" stroke-width="1.5" />
+  <text x="74" y="152" fill="#2dd4bf" font-size="15" font-weight="700">1. Snowflake on AWS (Silver EDW)</text>
+  <text x="74" y="176" fill="#e8eefc" font-size="12">• Clinical Claims &amp; Longitudinal Labs</text>
+  <text x="74" y="196" fill="#e8eefc" font-size="12">• SDoH &amp; Utilization History Tables</text>
+  <text x="74" y="216" fill="#e8eefc" font-size="12">• Legacy Baseline API Scores</text>
+  <text x="74" y="242" fill="#95a5cd" font-size="11">Accessed once per run via AWS PrivateLink</text>
+  <text x="74" y="260" fill="#95a5cd" font-size="11">(SnowflakeDatasetAdapter / Arrow stream)</text>
+  <rect x="74" y="270" width="234" height="20" rx="4" fill="#0f172a" />
+  <text x="84" y="284" fill="#34d399" font-size="11" font-weight="600">✓ Production Output: Snowpark @sproc</text>
+
+  <!-- Box 2: AWS Controller & Parent Evaluator -->
+  <rect x="376" y="124" width="292" height="205" rx="10" fill="#172342" stroke="#38bdf8" stroke-width="1.5" />
+  <text x="394" y="152" fill="#38bdf8" font-size="15" font-weight="700">2. AWS Runner &amp; Parent Evaluator</text>
+  <text x="394" y="172" fill="#95a5cd" font-size="11">(ECS Fargate / SageMaker / Snowpark CS)</text>
+  <text x="394" y="196" fill="#e8eefc" font-size="12">• Runs run_experiment.py &amp; evaluator.py</text>
+  <text x="394" y="216" fill="#e8eefc" font-size="12">• Caches cohort in RAM + applies private</text>
+  <text x="404" y="232" fill="#e8eefc" font-size="12">AE_PERTURB_SEED jitter</text>
+  <text x="394" y="252" fill="#e8eefc" font-size="12">• Strips outcome_label from eval split</text>
+  <text x="394" y="272" fill="#e8eefc" font-size="12">• Computes ROC-AUC, PR-AUC &amp; $ ROI</text>
+  <text x="394" y="294" fill="#34d399" font-size="11" font-weight="600">• Saves candidates/cand_001..200.py locally</text>
+
+  <!-- Box 3: Air-Gapped Child Sandbox -->
+  <rect x="376" y="376" width="292" height="182" rx="10" fill="#172342" stroke="#f43f5e" stroke-width="1.5" />
+  <text x="394" y="404" fill="#fb7185" font-size="15" font-weight="700">3. Air-Gapped Child Worker Sandbox</text>
+  <text x="394" y="424" fill="#95a5cd" font-size="11">Subprocess: python -P -s (PYTHONHASHSEED=0)</text>
+  <text x="394" y="448" fill="#e8eefc" font-size="12">• Pre-imports LightGBM, XGBoost, Sklearn</text>
+  <text x="394" y="468" fill="#e8eefc" font-size="12">• C-level sys.addaudithook blocks socket.*,</text>
+  <text x="404" y="484" fill="#e8eefc" font-size="12">file writes, subprocesses &amp; frame leaks</text>
+  <text x="394" y="506" fill="#e8eefc" font-size="12">• Phase 1: fit_and_score_risk (~400 ms)</text>
+  <text x="394" y="526" fill="#e8eefc" font-size="12">• Phase 2: allocate_interventions (~50 ms)</text>
+
+  <!-- Box 4: GCP Workload Identity Federation -->
+  <rect x="764" y="124" width="300" height="110" rx="10" fill="#172342" stroke="#fbbf24" stroke-width="1.5" />
+  <text x="782" y="152" fill="#fbbf24" font-size="15" font-weight="700">4. GCP Workload Identity (WIF)</text>
+  <text x="782" y="176" fill="#e8eefc" font-size="12">• Exchanges AWS IAM Role STS token for</text>
+  <text x="792" y="194" fill="#e8eefc" font-size="12">short-lived GCP SA token</text>
+  <text x="782" y="216" fill="#34d399" font-size="11" font-weight="600">• Zero static GCP keys stored in AWS</text>
+
+  <!-- Box 5: GCP AlphaEvolve Service -->
+  <rect x="764" y="268" width="300" height="290" rx="10" fill="#172342" stroke="#38bdf8" stroke-width="1.5" />
+  <text x="782" y="298" fill="#38bdf8" font-size="15" font-weight="700">5. GCP AlphaEvolve (Discovery Engine)</text>
+  <text x="782" y="320" fill="#95a5cd" font-size="11">discoveryengine.googleapis.com (Global)</text>
+  <text x="782" y="348" fill="#e8eefc" font-size="12">• Receives initial_program.py (~90 lines)</text>
+  <text x="792" y="366" fill="#e8eefc" font-size="12">&amp; problem_description.md (schema docs)</text>
+  <text x="782" y="394" fill="#e8eefc" font-size="12">• Mutates EVOLVE-BLOCK using weighted</text>
+  <text x="792" y="412" fill="#e8eefc" font-size="12">Gemini 3.5 Flash (0.8) + 3.1 Pro (0.2)</text>
+  <text x="782" y="440" fill="#e8eefc" font-size="12">• Evolves clinical syndrome interactions,</text>
+  <text x="792" y="458" fill="#e8eefc" font-size="12">OOF GBDT stacking &amp; Stage 2 allocators</text>
+  <rect x="782" y="482" width="264" height="56" rx="6" fill="#0f172a" stroke="#26335d" />
+  <text x="794" y="502" fill="#fbbf24" font-size="11" font-weight="700">Only Data Stored in GCP:</text>
+  <text x="794" y="520" fill="#95a5cd" font-size="11">Python candidate code + aggregate AUC/ROI</text>
+
+  <!-- Arrows -->
+  <!-- Snowflake -> AWS Runner -->
+  <line x1="326" y1="195" x2="372" y2="195" stroke="#34d399" stroke-width="2.5" marker-end="url(#arrow-green)" />
+  <text x="332" y="185" fill="#34d399" font-size="10" font-weight="600">Arrow</text>
+
+  <!-- AWS Runner -> Snowflake (Promote rank1.py) -->
+  <path d="M 376 278 L 314 278" stroke="#34d399" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#arrow-green)" />
+
+  <!-- AWS Runner <-> Child Sandbox (OS Pipe) -->
+  <line x1="490" y1="329" x2="490" y2="372" stroke="#38bdf8" stroke-width="2.5" marker-end="url(#arrow-blue)" />
+  <line x1="550" y1="376" x2="550" y2="333" stroke="#34d399" stroke-width="2.5" marker-end="url(#arrow-green)" />
+  <text x="405" y="356" fill="#95a5cd" font-size="11">2-Phase OS Pipe</text>
+  <text x="562" y="356" fill="#34d399" font-size="11">Risks + Plan</text>
+
+  <!-- AWS Runner -> WIF -->
+  <line x1="668" y1="168" x2="760" y2="168" stroke="#fbbf24" stroke-width="2" marker-end="url(#arrow-amber)" />
+  <text x="676" y="158" fill="#fbbf24" font-size="10" font-weight="600">STS -> WIF</text>
+
+  <!-- AWS Runner <-> GCP AlphaEvolve (Outbound HTTPS 443) -->
+  <line x1="764" y1="305" x2="672" y2="245" stroke="#38bdf8" stroke-width="2.5" marker-end="url(#arrow-blue)" />
+  <text x="676" y="262" fill="#38bdf8" font-size="10" font-weight="600">candidate.py (5 KB)</text>
+
+  <line x1="668" y1="295" x2="760" y2="355" stroke="#34d399" stroke-width="2.5" marker-end="url(#arrow-green)" />
+  <text x="675" y="345" fill="#34d399" font-size="10" font-weight="600">score + AUC insights</text>
+</svg>

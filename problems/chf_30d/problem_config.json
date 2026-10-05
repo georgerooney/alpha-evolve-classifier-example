@@ -1,0 +1,50 @@
+{
+  "problem_id": "chf_30d",
+  "title": "Congestive Heart Failure (CHF) 30-Day Readmission Propensity & Timing",
+  "horizon_days": 30,
+  "target_auc": 0.76,
+  "target_specificity": 0.8,
+  "min_sensitivity_floor": 0.6,
+  "event_cost_usd": 19400.0,
+  "hrrp_penalty_multiplier": 1.3,
+  "roi_per_1pct_auc_usd": 490000.0,
+  "base_seed": 44000,
+  "scenarios": [
+    {
+      "scenario_id": "CHF-01",
+      "scenario_name": "HFrEF Acute Decompensated Heart Failure Discharges",
+      "description": "Reduced ejection fraction (~20% readmission rate) with fluid weight and NT-proBNP elevation.",
+      "n_train": 340,
+      "n_eval": 170,
+      "budget_usd": 28000.0,
+      "shift": "chf_hfref"
+    },
+    {
+      "scenario_id": "CHF-02",
+      "scenario_name": "Cardiorenal Syndrome & Loop Diuretic Resistance",
+      "description": "High loop diuretic dose + 7-day weight gain + eGFR drop driving rapid 14-day readmission.",
+      "n_train": 320,
+      "n_eval": 160,
+      "budget_usd": 26000.0,
+      "shift": "cardiorenal"
+    },
+    {
+      "scenario_id": "CHF-03",
+      "scenario_name": "HFpEF Elderly Multi-Morbid Cohort",
+      "description": "Preserved ejection fraction with atrial/renal comorbidities and medication adherence gaps.",
+      "n_train": 320,
+      "n_eval": 160,
+      "budget_usd": 25000.0,
+      "shift": "high_sdoh"
+    },
+    {
+      "scenario_id": "CHF-04",
+      "scenario_name": "High-Volume Community Hospital HF Network",
+      "description": "Broad community CHF discharges under telemonitoring and RN home-visit slot caps.",
+      "n_train": 320,
+      "n_eval": 160,
+      "budget_usd": 23000.0,
+      "shift": "capacity_crunch"
+    }
+  ]
+}
