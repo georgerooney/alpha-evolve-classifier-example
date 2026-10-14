@@ -1050,7 +1050,6 @@ def serve_ui(host: str = "127.0.0.1", port: int = 8767) -> None:
         raise ValueError("Server must bind only to 127.0.0.1 or localhost.")
 
     session = PortfolioSimulationSession()
-    cached_snapshot = session.evaluate_portfolio()
 
     class Handler(http.server.BaseHTTPRequestHandler):
         def _send_headers(self, status: int, content_type: str) -> None:
@@ -1093,7 +1092,7 @@ def serve_ui(host: str = "127.0.0.1", port: int = 8767) -> None:
             if path == "/api/problems":
                 return self._json(200, list_problems())
             if path == "/api/portfolio":
-                return self._json(200, cached_snapshot)
+                return self._json(200, session.evaluate_portfolio())
             pid = resolve_problem_id(parsed.get("problem_id", ["diabetes130_readmit30"])[0])
             rid = parsed.get("run_id", [None])[0] or None
             if path == "/api/setup":
