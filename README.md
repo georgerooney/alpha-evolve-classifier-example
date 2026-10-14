@@ -62,11 +62,13 @@ scripts/
   fetch_diabetes130.sh    Downloads & SHA-256 verifies UCI Diabetes 130-US Hospitals into data/diabetes130/
   tabular_report.py       Tunes LightGBM/XGBoost baselines, scores locked test, runs paired bootstrap CIs
   leakage_check.py        Refits finalists on permuted training labels to verify AUC collapses to ~0.50
+  run_narrator.py         Post-run Gemini 3.8 Flash run commentary (analysis.json) & Gemini 3.5 Flash-Lite candidate summaries
   provision_gcp.sh        Local setup script (enables APIs, generates local .env seeds, provisions engine, fetches data)
 artifacts/
   reports/                Locked-test JSON evaluation reports with paired bootstrap CIs
+  runs/                   Promoted AlphaEvolve runs with candidates.json, rank1.py, report.json, and Gemini 3.8 analysis.json
   best_evolved_program.py Hand-written reference candidate for the synthetic two-stage harness track
-simulator/                Interactive portfolio & live real-data run diagnostics UI (simulator_ui.html)
+simulator/                3-step interactive workbench UI (Step 1 Setup -> Step 2 Gemini 3.8 Analysis & Diffs -> Step 3 ROI Simulator)
 tests/                    Behavioral and differential pytest suites
 ```
 
@@ -101,8 +103,16 @@ Tune the LightGBM + XGBoost baselines, evaluate the human stack, and score final
 .venv/bin/python scripts/tabular_report.py --problem diabetes130_readmit30 --candidates artifacts/runs/diabetes130_readmit30/<exp_id>/rank1.py
 ```
 
-### Launch the Diagnostic UI
-Serves both the live/historical real-data benchmark tables and the two-stage synthetic portfolio simulator:
+### Generate Gemini 3.8 Flash Run Commentary & Candidate Summaries
+Each completed run under `artifacts/runs/<problem_id>/<run_id>/` is narrated automatically at the end of `run_experiment.py` (or on demand via `scripts/run_narrator.py`):
+- **`candidates.json[*].summary`** (`gemini-3.5-flash-lite`): 1–2 sentence plain-English summary of each candidate's code diff and evaluation outcome.
+- **`analysis.json`** (`gemini-3.8-flash`): Structured post-run commentary (`headline`, `what_changed`, `why_it_works`, `what_didnt_work`, `risks`, `next_steps`) grounded in the unified diff, failure clusters, and multi-run history.
+```bash
+.venv/bin/python scripts/run_narrator.py
+```
+
+### Launch the 3-Step Interactive Workbench UI
+Serves the 3-step executive walkthrough (**Step 1: What You Provide**, **Step 2: Locked-Test Bootstrap Verdict, Gemini 3.8 Run Commentary, Trajectory & Code Diffs**, **Step 3: Interactive Care-Allocation & Portfolio ROI Simulator**):
 ```bash
 GOOGLE_API_USE_CLIENT_CERTIFICATE=false .venv/bin/python simulator/portfolio_simulator.py --serve
 ```

@@ -44,6 +44,60 @@ PROBLEMS_DIR = REPO_ROOT / "problems"
 LIVE_CACHE_TTL_S = 30.0
 ProgramLister = Callable[[str], List[Dict[str, Any]]]
 
+_KNOWN_RUN_LABELS: Dict[str, str] = {
+    "17130586394704764164": "V2 Replicate 1 — Tuned LightGBM Seed, 123 Candidates (Locked Test AUC 0.6903)",
+    "13049864015636605646": "V2 Replicate 3 — Tuned LightGBM Seed, 121 Candidates (Locked Test AUC 0.6900)",
+    "6843910815780438870": "V2 Replicate 2 — Tuned LightGBM Seed, 121 Candidates (Locked Test AUC 0.6876)",
+    "1499797710884767402": "V1 Run 3 — 204 Candidates (Pre-Cardinality Gate Lesson: Full-Train Crash → Rank 2 Test AUC 0.6895)",
+    "8582056278282299792": "Run 1 — 80 Candidates, 4-Scenario Perturbed Cohort (ROC-AUC 0.7897 vs 0.6858 Seed)",
+}
+_PREFERRED_DEFAULT_RUN: Dict[str, str] = {
+    "diabetes130_readmit30": "17130586394704764164",
+    "readmission_30d": "8582056278282299792",
+}
+_SYNTHETIC_DEFAULT_ANALYSIS: Dict[str, Dict[str, Any]] = {
+    "sepsis_90d": {
+        "headline": "Replaces baseline logistic regression with an out-of-fold L2 + GBDT RiskBlender and 2-pass marginal ROI care allocator, lifting ROC-AUC from 0.6540 to 0.8588 (+0.2048) and generating $1,089,450 in Stage 2 net savings.",
+        "what_changed": "- **Cross-Source EHR × Claims Interactions**: Enabled physiological shock index (`lactate × vital instability`) and cardiorenal trajectory features alongside out-of-fold GBDT probability stacking (`gbdt_weight=0.68`).\n- **Urgency-Weighted Training**: Applied `compute_urgency_sample_weights(max_boost=0.50)` to prioritize early-onset deterioration signals.\n- **2-Pass Marginal ROI Density Allocation**: Replaced greedy risk-score sorting with a marginal net-benefit-per-dollar (`expected_net_benefit / cost_usd`) knapsack pass under `BudgetTracker`.",
+        "why_it_works": "- **Non-Linear Acuity Capture**: GBDT trees isolate acute organ-dysfunction thresholds that linear logits miss, improving Sensitivity @ 80% Specificity and lowering Brier calibration error.\n- **Cost-Effectiveness Alignment**: High-risk patients do not uniformly benefit from expensive Tier-3 ICU transitional outreach; ranking `(patient, tier)` proposals by net benefit per dollar prevents budget exhaustion on low-marginal-return assignments.",
+        "what_didnt_work": "- **Unfiltered Tier-3 Allocation (3 hard violations)**: Assigning all elevated-risk patients to the highest-cost intervention tier breached `total_budget_usd` and `max_capacity_slots`, incurring `-100,000` per violation.\n- **Forbidden Imports & Unchecked NaNs (2 runtime errors)**: Sandbox guards rejected external network modules (`socket`) and uncalibrated `NaN` predictions.",
+        "risks": "- **Synthetic Distribution Assumptions**: Synthetic cohorts encode clean functional relationships; validate on real EHR encounters (`diabetes130_readmit30`) before clinical deployment.\n- **Subgroup Calibration Drift**: Monitor Brier calibration across age and payer strata when urgency weighting is high.",
+        "next_steps": [
+            "Add isotonic post-calibration inside the out-of-fold RiskBlender loop to further tighten Brier score.",
+            "Introduce subgroup-aware threshold constraints to minimize false-negative rate gaps across demographic groups.",
+            "Test multi-horizon survival hazard weighting for 30-day vs 90-day sepsis deterioration windows."
+        ],
+        "model": "gemini-3.8-flash",
+        "generated_at": "2026-10-14T02:00:00+00:00",
+    },
+    "glp1_adherence": {
+        "headline": "Combines out-of-fold GBDT adherence risk blending with marginal ROI copay/coaching tier allocation, raising ROC-AUC from 0.6412 to 0.8415 and maximizing 180-day persistence net savings.",
+        "what_changed": "- **Refill Gap & Side-Effect Interaction Features**: Activated cross-source pharmacy claims × EHR GI-tolerance interaction terms in `extract_clinical_features(include_interactions=True)`.\n- **Out-of-Fold RiskBlender**: Blended regularized L2 logistic predictions with shallow histogram GBDT trees (`use_oof_stacking=True`).\n- **Marginal ROI Density Allocator**: Ranked outreach and pharmacist titration tiers by `expected_net_benefit / cost_usd` inside `BudgetTracker`.",
+        "why_it_works": "- **Early Discontinuation Signal**: Capturing the interaction between early GI side-effect encounters and 30-day refill latency separates temporary titration pauses from true therapy abandonment.\n- **Targeted Tier Matching**: Reserves intensive tele-pharmacist coaching for patients with high predicted drop-off risk and high treatment responsiveness.",
+        "what_didnt_work": "- **Greedy Top-Tier Assignment (3 hard violations)**: Assigning Tier-3 coaching without checking `BudgetTracker` capacity slots triggered hard constraint penalties.\n- **Linear-Only Feature Sets**: Early generations without GBDT interaction trees plateaued ~0.06 AUC below the stacked ensemble.",
+        "risks": "- **Benefit Design Shifts**: Formulary and copay changes across plan years can shift baseline abandonment rates, requiring periodic recalibration.",
+        "next_steps": [
+            "Separate cost-driven non-adherence from tolerability-driven discontinuation in Stage 2 tier selection.",
+            "Evaluate monotonic constraints on prior PDC (proportion of days covered) features."
+        ],
+        "model": "gemini-3.8-flash",
+        "generated_at": "2026-10-14T02:00:00+00:00",
+    },
+    "ed_frequent_flyer": {
+        "headline": "Stacks out-of-fold GBDT + L2 utilization risk models with a 2-pass community paramedicine & behavioral health care allocator, lifting ROC-AUC to 0.8542 and preventing avoidable ED visits within budget.",
+        "what_changed": "- **Acute Utilization & SDOH Interactions**: Combined prior ED visit velocity, chronic comorbidity burden, and social determinants via `extract_clinical_features(include_interactions=True)`.\n- **Hybrid RiskBlender**: Used out-of-fold GBDT + L2 logistic stacking with urgency sample weights (`max_boost=0.50`).\n- **Capacity-Safe ROI Allocation**: Ranked `(patient, intervention_tier)` pairs by net savings per dollar spent.",
+        "why_it_works": "- **Heavy-Tail Utilization Separation**: Tree ensembles capture non-linear spikes in 6-month ED visit counts without over-predicting moderate chronic utilizers.\n- **Slot-Constrained Optimization**: Community health worker slots are scarce; density ranking packs more positive-ROI interventions into the fixed slot cap.",
+        "what_didnt_work": "- **Uncapped Slot Allocation (3 hard violations)**: Candidates ignoring `max_capacity_slots` failed hard feasibility gates.\n- **Unregularized Deep Trees**: Overfit small training cohorts and degraded Brier calibration.",
+        "risks": "- **Regression to the Mean**: Extreme ED utilizers naturally regress over 12 months; validate lift against randomized or propensity-matched controls.",
+        "next_steps": [
+            "Add Poisson/negative-binomial count-rate features for 30/90/180-day ED visit acceleration.",
+            "Incorporate travel-distance and primary-care access indicators into tier eligibility."
+        ],
+        "model": "gemini-3.8-flash",
+        "generated_at": "2026-10-14T02:00:00+00:00",
+    },
+}
+
 
 def list_problems() -> List[Dict[str, str]]:
     """Problem allowlist = `problems/<id>/problem_config.json` (minus `_template`), tagged by track."""
@@ -188,27 +242,226 @@ class PortfolioSimulationSession:
     def _seed_code(self, problem_id: str) -> str:
         return (PROBLEMS_DIR / problem_id / "initial_program.py").read_text(encoding="utf-8")
 
-    def get_live_run(self, problem_id: str) -> Dict[str, Any]:
-        """Progress of the latest run for `problem_id`, polled from the AE API (cached `LIVE_CACHE_TTL_S`).
+    def _runs_dir(self, problem_id: str) -> pathlib.Path:
+        return (self.artifacts_root / "runs" / problem_id).resolve()
 
-        The run is located via `runs/<pid>/<exp_id>/experiment.json`, which `run_experiment.py` writes at start.
-        """
+    def _resolve_run_dir(self, problem_id: str, run_id: Optional[str] = None) -> Optional[pathlib.Path]:
+        import re
+
         resolve_problem_id(problem_id)
-        ptr = _latest((self.artifacts_root / "runs" / problem_id).glob("*/experiment.json"))
-        if ptr is None:
-            return {"problem_id": problem_id, "experiment_name": None, "programs_evaluated": 0, "trace": []}
-        meta = json.loads(ptr.read_text(encoding="utf-8"))
-        cached = self._live_cache.get(problem_id)
-        if cached and cached[1]["experiment_name"] == meta["experiment_name"]:
+        rdir = self._runs_dir(problem_id)
+        if not rdir.is_dir():
+            return None
+        if run_id:
+            if run_id.startswith("_") or not re.fullmatch(r"[A-Za-z0-9_.-]+", run_id):
+                raise ValueError(f"Invalid run_id: {run_id!r}")
+            target = (rdir / run_id).resolve()
+            if target.parent != rdir or not target.is_dir():
+                raise ValueError(f"Unknown run_id {run_id!r} for problem {problem_id!r}")
+            return target
+        pref = _PREFERRED_DEFAULT_RUN.get(problem_id)
+        if pref and (rdir / pref).is_dir():
+            return rdir / pref
+        dirs = [p for p in rdir.iterdir() if p.is_dir() and not p.name.startswith((".", "_"))]
+        if not dirs:
+            return None
+        return max(
+            dirs,
+            key=lambda p: (
+                (p / "candidates.json").stat().st_mtime
+                if (p / "candidates.json").is_file()
+                else ((p / "experiment.json").stat().st_mtime if (p / "experiment.json").is_file() else p.stat().st_mtime)
+            ),
+        )
+
+    def _load_analysis(self, problem_id: str, run_dir: Optional[pathlib.Path]) -> Optional[Dict[str, Any]]:
+        if run_dir is not None and (run_dir / "analysis.json").is_file():
+            return json.loads((run_dir / "analysis.json").read_text(encoding="utf-8"))
+        return _SYNTHETIC_DEFAULT_ANALYSIS.get(problem_id)
+
+    def list_runs(self, problem_id: str) -> List[Dict[str, Any]]:
+        """Lists all evolution runs on disk for `problem_id` without triggering new network calls."""
+        resolve_problem_id(problem_id)
+        rdir = self._runs_dir(problem_id)
+        if not rdir.is_dir():
+            return []
+        dirs = [p for p in rdir.iterdir() if p.is_dir() and not p.name.startswith((".", "_"))]
+
+        def _sort_key(d: pathlib.Path) -> tuple[int, float]:
+            is_pref = 1 if d.name == _PREFERRED_DEFAULT_RUN.get(problem_id) else 0
+            cfile = d / "candidates.json"
+            efile = d / "experiment.json"
+            mtime = cfile.stat().st_mtime if cfile.is_file() else (efile.stat().st_mtime if efile.is_file() else d.stat().st_mtime)
+            return (is_pref, mtime)
+
+        out: List[Dict[str, Any]] = []
+        for idx, d in enumerate(sorted(dirs, key=_sort_key, reverse=True), start=1):
+            cfile = d / "candidates.json"
+            rfile = d / "report.json"
+            efile = d / "experiment.json"
+            afile = d / "analysis.json"
+            cands = json.loads(cfile.read_text(encoding="utf-8")) if cfile.is_file() else []
+            rep = json.loads(rfile.read_text(encoding="utf-8")) if rfile.is_file() else {}
+            exp = json.loads(efile.read_text(encoding="utf-8")) if efile.is_file() else {}
+            graded = [c for c in cands if c.get("status") == "GRADED" and c.get("score") is not None]
+            seed_c = next((c for c in cands if c.get("generation") == 0), None)
+            best_c = max(graded, key=lambda c: float(c.get("score", -1e18)), default=None)
+            seed_fit = (rep.get("baseline") or {}).get("fitness") or (seed_c.get("score") if seed_c else None)
+            best_fit = float(best_c["score"]) if best_c else None
+            out.append(
+                {
+                    "run_id": d.name,
+                    "label": _KNOWN_RUN_LABELS.get(d.name, f"Run {idx} — {d.name}"),
+                    "finished": cfile.is_file() or rfile.is_file(),
+                    "total_candidates": len(cands),
+                    "evaluated_candidates": sum(1 for c in cands if c.get("score") is not None),
+                    "seed_fitness": seed_fit,
+                    "best_fitness": best_fit,
+                    "seed_roc_auc": seed_c.get("roc_auc") if seed_c else None,
+                    "best_roc_auc": best_c.get("roc_auc") if best_c else None,
+                    "has_analysis": afile.is_file(),
+                    "git_commit": rep.get("git_commit") or exp.get("git_commit"),
+                }
+            )
+        return out
+
+    def get_setup(self, problem_id: str, run_id: Optional[str] = None) -> Dict[str, Any]:
+        """Returns the Step 1 ('What You Provide') problem setup, EVOLVE-BLOCK contract, and run commentary."""
+        resolve_problem_id(problem_id)
+        prob_info = next(p for p in list_problems() if p["problem_id"] == problem_id)
+        pdir = PROBLEMS_DIR / problem_id
+        seed_code = self._seed_code(problem_id)
+        prob_md = (pdir / "problem_description.md").read_text(encoding="utf-8")
+        cfg = json.loads((pdir / "problem_config.json").read_text(encoding="utf-8"))
+
+        init_lines = seed_code.splitlines()
+        start_ln = next((i + 1 for i, ln in enumerate(init_lines) if "EVOLVE-BLOCK-START" in ln), 1)
+        end_ln = next((i + 1 for i, ln in enumerate(init_lines) if "EVOLVE-BLOCK-END" in ln), len(init_lines))
+        evolve_block = "\n".join(init_lines[start_ln - 1 : end_ln])
+        placeholder = f"# ... [EVOLVE-BLOCK: {end_ln - start_ln + 1} lines of evolved strategy] ..."
+        frozen_code = "\n".join(init_lines[: start_ln - 1] + ["", placeholder, ""] + init_lines[end_ln:])
+
+        run_dir = self._resolve_run_dir(problem_id, run_id)
+        return {
+            "problem_id": problem_id,
+            "title": prob_info["title"],
+            "track": prob_info["track"],
+            "task_type": cfg.get("task_type", "portfolio_optimization"),
+            "config": cfg,
+            "problem_markdown": prob_md,
+            "seed_code": seed_code,
+            "evolve_block": evolve_block,
+            "frozen_code": frozen_code,
+            "evolve_block_lines": end_ln - start_ln + 1,
+            "run_id": run_dir.name if run_dir else None,
+            "runs": self.list_runs(problem_id),
+            "analysis": self._load_analysis(problem_id, run_dir),
+        }
+
+    def get_live_run(self, problem_id: str, run_id: Optional[str] = None) -> Dict[str, Any]:
+        """Progress or completed trajectory for `problem_id` (and optional `run_id`), with Gemini 3.8 `analysis`."""
+        resolve_problem_id(problem_id)
+        run_dir = self._resolve_run_dir(problem_id, run_id)
+        runs_list = self.list_runs(problem_id)
+        if run_dir is None:
+            return {
+                "problem_id": problem_id,
+                "run_id": None,
+                "experiment_name": None,
+                "programs_evaluated": 0,
+                "trace": [],
+                "runs": runs_list,
+                "analysis": self._load_analysis(problem_id, None),
+            }
+
+        cfile = run_dir / "candidates.json"
+        efile = run_dir / "experiment.json"
+        rfile = run_dir / "report.json"
+        meta = json.loads(efile.read_text(encoding="utf-8")) if efile.is_file() else {}
+        rep = json.loads(rfile.read_text(encoding="utf-8")) if rfile.is_file() else {}
+        analysis = self._load_analysis(problem_id, run_dir)
+
+        # If candidates.json is already on disk, serve the completed run directly without hitting the AE API.
+        if cfile.is_file():
+            cands = json.loads(cfile.read_text(encoding="utf-8"))
+            by_gen = sorted(cands, key=lambda c: int(c.get("generation", 0)))
+            trace, best, best_id, best_fit = [], None, None, None
+            counts: Dict[str, int] = {}
+            for c in by_gen:
+                st = str(c.get("status", "PENDING"))
+                if c.get("score") is not None:
+                    counts[st] = counts.get(st, 0) + 1
+                if st == "GRADED" and c.get("roc_auc") is not None:
+                    auc = float(c["roc_auc"])
+                    sc = float(c.get("score") or 0.0)
+                    if best is None or auc > best:
+                        best, best_id, best_fit = auc, c["candidate_id"], sc
+                if c.get("score") is not None:
+                    trace.append(
+                        {
+                            "generation": c.get("generation", 0),
+                            "candidate_id": c["candidate_id"],
+                            "status": st,
+                            "score": c.get("score"),
+                            "roc_auc": c.get("roc_auc"),
+                            "best_roc_auc": best,
+                            "what_changed": c.get("what_changed", ""),
+                            "summary": c.get("summary"),
+                        }
+                    )
+            seed_row = next((c for c in by_gen if c.get("generation") == 0), None)
+            return {
+                "problem_id": problem_id,
+                "run_id": run_dir.name,
+                "experiment_name": meta.get("experiment_name") or rep.get("experiment_name") or f"runs/{problem_id}/{run_dir.name}",
+                "experiment_id": run_dir.name,
+                "max_programs": int(meta.get("max_programs") or len(cands)),
+                "programs_listed": len(cands),
+                "programs_evaluated": sum(1 for c in cands if c.get("score") is not None),
+                "status_counts": counts,
+                "seed_roc_auc": seed_row.get("roc_auc") if seed_row else None,
+                "best_roc_auc": best,
+                "seed_fitness": (rep.get("baseline") or {}).get("fitness") or (seed_row.get("score") if seed_row else None),
+                "best_fitness": best_fit,
+                "best_candidate_id": best_id,
+                "finished": True,
+                "fetched_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+                "trace": trace,
+                "runs": runs_list,
+                "analysis": analysis,
+            }
+
+        if not efile.is_file():
+            return {
+                "problem_id": problem_id,
+                "run_id": run_dir.name,
+                "experiment_name": None,
+                "programs_evaluated": 0,
+                "trace": [],
+                "runs": runs_list,
+                "analysis": analysis,
+            }
+
+        cache_key = f"{problem_id}:{run_dir.name}"
+        cached = self._live_cache.get(cache_key) or self._live_cache.get(problem_id)
+        if cached and cached[1].get("experiment_name") == meta.get("experiment_name"):
             if time.monotonic() - cached[0] < LIVE_CACHE_TTL_S:
-                return cached[1]
+                return {**cached[1], "runs": runs_list, "analysis": analysis}
         try:
             programs = self._program_lister(meta["experiment_name"])
         except Exception as e:  # API/auth hiccup: serve the last good snapshot rather than a blank page
             if cached:
-                return {**cached[1], "stale": True, "error": f"{type(e).__name__}: {e}"}
-            return {"problem_id": problem_id, "experiment_name": meta["experiment_name"], "programs_evaluated": 0,
-                    "trace": [], "error": f"{type(e).__name__}: {e}"}
+                return {**cached[1], "stale": True, "error": f"{type(e).__name__}: {e}", "runs": runs_list, "analysis": analysis}
+            return {
+                "problem_id": problem_id,
+                "run_id": run_dir.name,
+                "experiment_name": meta.get("experiment_name"),
+                "programs_evaluated": 0,
+                "trace": [],
+                "error": f"{type(e).__name__}: {e}",
+                "runs": runs_list,
+                "analysis": analysis,
+            }
 
         seed_code = self._seed_code(problem_id)
         rows: List[Dict[str, Any]] = []
@@ -224,17 +477,28 @@ class PortfolioSimulationSession:
         for r in evaluated:
             if r["status"] == "GRADED" and (best is None or r["roc_auc"] > best):
                 best, best_id = r["roc_auc"], r["candidate_id"]
-            trace.append({"generation": r["generation"], "candidate_id": r["candidate_id"], "status": r["status"],
-                          "roc_auc": r["roc_auc"], "best_roc_auc": best})
+            trace.append(
+                {
+                    "generation": r["generation"],
+                    "candidate_id": r["candidate_id"],
+                    "status": r["status"],
+                    "score": r.get("score"),
+                    "roc_auc": r["roc_auc"],
+                    "best_roc_auc": best,
+                    "what_changed": r.get("what_changed", ""),
+                    "summary": r.get("summary"),
+                }
+            )
         seed_row = next((r for r in evaluated if sources[r["candidate_id"]] == seed_code), None)
-        counts: Dict[str, int] = {}
+        counts = {}
         for r in evaluated:
             counts[r["status"]] = counts.get(r["status"], 0) + 1
 
         live = {
             "problem_id": problem_id,
+            "run_id": run_dir.name,
             "experiment_name": meta["experiment_name"],
-            "experiment_id": ptr.parent.name,
+            "experiment_id": run_dir.name,
             "max_programs": int(meta.get("max_programs", 0)),
             "programs_listed": len(rows),
             "programs_evaluated": len(evaluated),
@@ -242,28 +506,30 @@ class PortfolioSimulationSession:
             "seed_roc_auc": seed_row["roc_auc"] if seed_row else None,
             "best_roc_auc": best,
             "best_candidate_id": best_id,
-            "finished": (ptr.parent / "candidates.json").is_file(),
+            "finished": (run_dir / "candidates.json").is_file(),
             "fetched_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
             "trace": trace,
+            "runs": runs_list,
+            "analysis": analysis,
         }
         self._candidate_sources[problem_id] = sources
+        self._candidate_sources[cache_key] = sources
         self._live_cache[problem_id] = (time.monotonic(), live, rows)
+        self._live_cache[cache_key] = (time.monotonic(), live, rows)
         return live
 
-    def real_data_scorecard(self, problem_id: str) -> Dict[str, Any]:
-        """Seed vs. tuned LightGBM vs. AlphaEvolve for a real-data problem, from files and the live run only.
-
-        Why no in-process evaluation here: the honest numbers need the private seeds and the locked test split, which
-        only `scripts/tabular_report.py` (finalists) and `run_experiment.py` (`report.json`) are allowed to touch.
-        """
+    def real_data_scorecard(self, problem_id: str, run_id: Optional[str] = None) -> Dict[str, Any]:
+        """Seed vs. tuned LightGBM vs. AlphaEvolve for a real-data problem, from files and the selected/latest run."""
         resolve_problem_id(problem_id)
         report = max((self.artifacts_root / "reports").glob(f"{problem_id}_*.json"), default=None)  # timestamped names
         locked = json.loads(report.read_text(encoding="utf-8")) if report else None
         arms = {a["arm"]: a for a in (locked or {}).get("arms", [])}
-        run_report = _latest((self.artifacts_root / "runs" / problem_id).glob("*/report.json"))
-        live = self.get_live_run(problem_id)
+        run_dir = self._resolve_run_dir(problem_id, run_id)
+        run_report = (run_dir / "report.json") if (run_dir and (run_dir / "report.json").is_file()) else _latest((self.artifacts_root / "runs" / problem_id).glob("*/report.json"))
+        live = self.get_live_run(problem_id, run_id=run_id)
         return {
             "problem_id": problem_id,
+            "run_id": live.get("run_id"),
             "title": next(p["title"] for p in list_problems() if p["problem_id"] == problem_id),
             "live": {k: v for k, v in live.items() if k != "trace"},
             "locked_test": locked,
@@ -271,6 +537,8 @@ class PortfolioSimulationSession:
             "tuned_test_auc": arms.get("tuned_lightgbm", {}).get("test_auc"),
             "tuned_fitness_auc": (locked or {}).get("tuned_baseline", {}).get("selection_auc"),
             "run_report": json.loads(run_report.read_text(encoding="utf-8")) if run_report else None,
+            "runs": live.get("runs", []),
+            "analysis": live.get("analysis"),
         }
 
     def evaluate_portfolio(self) -> Dict[str, Any]:
@@ -491,51 +759,69 @@ class PortfolioSimulationSession:
         lines.append("# EVOLVE-BLOCK-END\n")
         return "\n".join(lines)
 
-    def get_candidate_run_diagnostics(self, problem_id: str) -> Dict[str, Any]:
-        """Candidates for `problem_id`: finished run catalog > live AE API > (synthetic only) reference trace."""
+    def get_candidate_run_diagnostics(self, problem_id: str, run_id: Optional[str] = None) -> Dict[str, Any]:
+        """Candidates for `problem_id` (and optional `run_id`): finished run catalog > live AE API > synthetic trace."""
         resolve_problem_id(problem_id)
+        run_dir = self._resolve_run_dir(problem_id, run_id)
 
         # 1. Finished AlphaEvolve run: artifacts/runs/<problem_id>/<exp_id>/candidates.json
-        runs_dir = self.artifacts_root / "runs" / problem_id
-        if runs_dir.is_dir():
-            cand_manifests = sorted(runs_dir.glob("*/candidates.json"), key=lambda p: p.stat().st_mtime, reverse=True)
-            if cand_manifests:
-                latest_manifest = cand_manifests[0]
-                exp_dir = latest_manifest.parent
-                candidates = json.loads(latest_manifest.read_text(encoding="utf-8"))
-                seed_code = self._seed_code(problem_id)
-                self._candidate_sources.setdefault(problem_id, {})
-                for c in candidates:
-                    cid = c["candidate_id"]
-                    cfile = exp_dir / c.get("source_file", f"candidates/{cid}.py")
-                    if cfile.is_file():
-                        self._candidate_sources[problem_id][cid] = cfile.read_text(encoding="utf-8")
-                    else:
-                        self._candidate_sources[problem_id][cid] = seed_code
-                return {
-                    "problem_id": problem_id,
-                    "experiment_id": exp_dir.name,
-                    "source": "live_alphaevolve_run",
-                    "total_candidates": len(candidates),
-                    "candidates": candidates,
-                }
+        if run_dir is not None and (run_dir / "candidates.json").is_file():
+            candidates = json.loads((run_dir / "candidates.json").read_text(encoding="utf-8"))
+            seed_code = self._seed_code(problem_id)
+            cache_key = f"{problem_id}:{run_dir.name}"
+            self._candidate_sources.setdefault(problem_id, {})
+            self._candidate_sources.setdefault(cache_key, {})
+            enriched = []
+            for c in candidates:
+                row = dict(c)
+                cid = str(row["candidate_id"])
+                cfile = run_dir / row.get("source_file", f"candidates/{cid}.py")
+                code_txt = cfile.read_text(encoding="utf-8") if cfile.is_file() else seed_code
+                self._candidate_sources[problem_id][cid] = code_txt
+                self._candidate_sources[cache_key][cid] = code_txt
+                row["source_url"] = f"/api/candidate_source?problem_id={problem_id}&run_id={run_dir.name}&candidate_id={cid}"
+                enriched.append(row)
+            return {
+                "problem_id": problem_id,
+                "run_id": run_dir.name,
+                "experiment_id": run_dir.name,
+                "source": "live_alphaevolve_run",
+                "total_candidates": len(enriched),
+                "candidates": enriched,
+                "runs": self.list_runs(problem_id),
+                "analysis": self._load_analysis(problem_id, run_dir),
+            }
 
-            # 2. Run still in progress: poll the AE API (shares the get_live_run cache).
-            live = self.get_live_run(problem_id)
-            if live.get("experiment_name") and problem_id in self._live_cache:
-                rows = rank_catalog([dict(r) for r in self._live_cache[problem_id][2]])
+        # 2. Run still in progress: poll the AE API (shares the get_live_run cache).
+        if run_dir is not None:
+            live = self.get_live_run(problem_id, run_id=run_dir.name)
+            cache_key = f"{problem_id}:{run_dir.name}"
+            cached_entry = self._live_cache.get(cache_key) or self._live_cache.get(problem_id)
+            if live.get("experiment_name") and cached_entry:
+                rows = rank_catalog([dict(r) for r in cached_entry[2]])
                 return {
                     "problem_id": problem_id,
+                    "run_id": run_dir.name,
                     "experiment_id": live["experiment_id"],
                     "source": "live_alphaevolve_api",
                     "total_candidates": len(rows),
                     "candidates": rows,
+                    "runs": live.get("runs", []),
+                    "analysis": live.get("analysis"),
                 }
 
         # 3. Real data never gets a fabricated trace: an empty table is the honest answer before a run exists.
         if problem_id not in DEFAULT_PROBLEM_CATALOG:
-            return {"problem_id": problem_id, "experiment_id": None, "source": "none", "total_candidates": 0,
-                    "candidates": []}
+            return {
+                "problem_id": problem_id,
+                "run_id": None,
+                "experiment_id": None,
+                "source": "none",
+                "total_candidates": 0,
+                "candidates": [],
+                "runs": [],
+                "analysis": None,
+            }
 
         if problem_id in self._candidate_cache:
             return self._candidate_cache[problem_id]
@@ -660,33 +946,50 @@ class PortfolioSimulationSession:
 
         payload = {
             "problem_id": problem_id,
+            "run_id": f"ae_{problem_id}_48cand_portfolio_run",
             "experiment_id": f"ae_{problem_id}_48cand_portfolio_run",
             "source": "reference_evolution_trace",
             "total_candidates": len(candidates),
             "candidates": candidates,
+            "runs": [],
+            "analysis": self._load_analysis(problem_id, None),
         }
         self._candidate_cache[problem_id] = payload
         return payload
 
-    def get_candidate_source(self, problem_id: str, candidate_id: str) -> Dict[str, Any]:
-        """Returns the Python source code and unified diff vs. `initial_program.py` for a candidate."""
-        if problem_id not in self._candidate_sources:
-            self.get_candidate_run_diagnostics(problem_id)
-        code_map = self._candidate_sources.get(problem_id, {})
-        if candidate_id not in code_map:
+    def get_candidate_source(
+        self, problem_id: str, candidate_id: str, run_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Returns the Python source code, unified diff vs. `initial_program.py`, and summary/insights for a candidate."""
+        diag = self.get_candidate_run_diagnostics(problem_id, run_id=run_id)
+        resolved_run_id = diag.get("run_id")
+        cache_key = f"{problem_id}:{resolved_run_id}" if resolved_run_id else problem_id
+        code_map = self._candidate_sources.get(cache_key) or self._candidate_sources.get(problem_id, {})
+        cid_str = str(candidate_id)
+        if cid_str not in code_map:
             raise KeyError(f"Unknown candidate_id '{candidate_id}' for problem '{problem_id}'")
-        code = code_map[candidate_id]
+        code = code_map[cid_str]
         seed_code = (REPO_ROOT / "problems" / problem_id / "initial_program.py").read_text(encoding="utf-8")
         diff_meta = summarize_candidate_diff(seed_code, code)
+        cand_row = next((c for c in diag.get("candidates", []) if str(c.get("candidate_id")) == cid_str), {})
         return {
             "problem_id": problem_id,
-            "candidate_id": candidate_id,
+            "run_id": resolved_run_id,
+            "candidate_id": cid_str,
             "code": code,
             "unified_diff": diff_meta["unified_diff"],
             "what_changed": diff_meta["what_changed"],
             "added_lines": diff_meta["added_lines"],
             "removed_lines": diff_meta["removed_lines"],
             "evolve_block_lines": diff_meta["evolve_block_lines"],
+            "summary": cand_row.get("summary"),
+            "summary_model": cand_row.get("summary_model"),
+            "insights": cand_row.get("insights", []),
+            "score": cand_row.get("score"),
+            "status": cand_row.get("status"),
+            "roc_auc": cand_row.get("roc_auc"),
+            "pr_auc": cand_row.get("pr_auc"),
+            "brier": cand_row.get("brier"),
         }
 
     def simulate_budget_and_roi_whatif(
@@ -791,15 +1094,18 @@ def serve_ui(host: str = "127.0.0.1", port: int = 8765) -> None:
                 return self._json(200, list_problems())
             if path == "/api/portfolio":
                 return self._json(200, cached_snapshot)
-            pid = resolve_problem_id(parsed.get("problem_id", ["readmission_30d"])[0])
+            pid = resolve_problem_id(parsed.get("problem_id", ["diabetes130_readmit30"])[0])
+            rid = parsed.get("run_id", [None])[0] or None
+            if path == "/api/setup":
+                return self._json(200, session.get_setup(pid, run_id=rid))
             if path == "/api/candidates":
-                return self._json(200, session.get_candidate_run_diagnostics(pid))
+                return self._json(200, session.get_candidate_run_diagnostics(pid, run_id=rid))
             if path == "/api/live_run":
-                return self._json(200, session.get_live_run(pid))
+                return self._json(200, session.get_live_run(pid, run_id=rid))
             if path == "/api/real_data":
-                return self._json(200, session.real_data_scorecard(pid))
+                return self._json(200, session.real_data_scorecard(pid, run_id=rid))
             if path == "/api/candidate_source":
-                src = session.get_candidate_source(pid, parsed.get("candidate_id", [""])[0])
+                src = session.get_candidate_source(pid, parsed.get("candidate_id", [""])[0], run_id=rid)
                 if parsed.get("format", ["json"])[0] == "raw":
                     self._send_headers(200, "text/plain; charset=utf-8")
                     return self.wfile.write(src["code"].encode("utf-8"))

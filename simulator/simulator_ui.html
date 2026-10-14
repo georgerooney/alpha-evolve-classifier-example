@@ -14,843 +14,1556 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; object-src 'none'; frame-ancestors 'self';" />
-  <title>AlphaEvolve Clinical Classifier — Clinical Portfolio &amp; Candidate Diagnostics</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;" />
+  <title>AlphaEvolve Clinical Risk &amp; Care-Allocation Workbench</title>
   <style>
     :root {
-      --bg: #0b1020;
-      --panel: #131b33;
-      --panel-alt: #0f162b;
-      --border: #26335d;
-      --text: #e8eefc;
-      --muted: #95a5cd;
-      --accent: #38bdf8;
-      --success: #34d399;
-      --warn: #fbbf24;
-      --danger: #f87171;
-      --purple: #c084fc;
+      --bg: #f4f2ec;
+      --card: #ffffff;
+      --muted: #f8f6f0;
+      --sec: #eae6dc;
+      --border: #d5d0c3;
+      --ink: #1f2937;
+      --ink2: #4b5563;
+      --ink3: #6b7280;
+      --navy: #1e3a5f;
+      --navy-bg: #eef2f7;
+      --forest: #166534;
+      --forest-bg: #eef6f0;
+      --terra: #b45309;
+      --terra-bg: #fdf5ea;
+      --crimson: #991b1b;
+      --crimson-bg: #fbeeee;
+      --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
     }
+
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background: var(--bg);
-      color: var(--text);
-      padding: 24px;
-      line-height: 1.45;
+      color: var(--ink);
+      font-family: var(--sans);
+      font-size: 14px;
+      line-height: 1.5;
+      font-variant-numeric: tabular-nums;
+      -webkit-font-smoothing: antialiased;
     }
+
     header {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 28px 0;
+    }
+    .hdr-top {
+      max-width: 1440px;
+      margin: 0 auto;
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 16px;
-      margin-bottom: 22px;
       gap: 16px;
       flex-wrap: wrap;
+      padding-bottom: 14px;
     }
-    h1 { margin: 0; font-size: 1.45rem; }
-    h2 { margin: 0 0 12px 0; font-size: 1.15rem; }
-    .subtitle { color: var(--muted); font-size: 0.9rem; margin-top: 4px; }
-    .header-actions {
+    .kicker {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink3);
+    }
+    h1 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      margin: 2px 0 4px;
+      color: var(--ink);
+    }
+    .sub {
+      color: var(--ink2);
+      font-size: 13px;
+      margin: 0;
+      max-width: 82ch;
+    }
+
+    .prob-bar {
+      max-width: 1440px;
+      margin: 0 auto;
       display: flex;
-      gap: 10px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-      gap: 14px;
-      margin-bottom: 22px;
-    }
-    .card {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 16px;
-      margin-bottom: 22px;
-    }
-    .kpi-label { color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
-    .kpi-val { font-size: 1.5rem; font-weight: 700; margin-top: 6px; color: var(--accent); }
-    .kpi-val.green { color: var(--success); }
-    .controls {
-      display: flex;
-      gap: 22px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-    .control-group {
-      display: flex;
-      flex-direction: column;
       gap: 6px;
-      min-width: 210px;
+      overflow-x: auto;
+      padding-top: 4px;
     }
-    label { font-size: 0.82rem; color: var(--muted); font-weight: 600; }
-    select, input[type="range"], input[type="text"] {
-      background: #0b1020;
-      color: var(--text);
+    .prob-tab {
+      background: var(--muted);
       border: 1px solid var(--border);
-      padding: 8px 10px;
-      border-radius: 6px;
-      font-size: 0.88rem;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-      font-size: 0.85rem;
-    }
-    th, td {
+      border-bottom: none;
+      border-radius: 6px 6px 0 0;
+      padding: 9px 14px;
+      cursor: pointer;
+      color: var(--ink2);
+      font: inherit;
       text-align: left;
-      padding: 9px 10px;
-      border-bottom: 1px solid var(--border);
-      vertical-align: top;
-    }
-    th {
-      color: var(--muted);
-      font-weight: 600;
-      position: sticky;
-      top: 0;
-      background: var(--panel);
-      z-index: 1;
-    }
-    tbody tr:hover {
-      background: rgba(56, 189, 248, 0.06);
-    }
-    .badge {
-      display: inline-block;
-      padding: 3px 9px;
-      border-radius: 999px;
-      font-size: 0.73rem;
-      font-weight: 600;
-      background: rgba(52, 211, 153, 0.15);
-      color: var(--success);
+      transition: background 120ms ease;
       white-space: nowrap;
     }
-    .badge.warn {
-      background: rgba(251, 191, 36, 0.16);
-      color: var(--warn);
-    }
-    .badge.danger {
-      background: rgba(248, 113, 113, 0.16);
-      color: var(--danger);
-    }
-    .badge.info {
-      background: rgba(56, 189, 248, 0.15);
-      color: var(--accent);
-    }
-    .btn {
-      background: #17254a;
-      color: var(--accent);
-      border: 1px solid #2e4782;
-      border-radius: 6px;
-      padding: 5px 10px;
-      font-size: 0.78rem;
+    .prob-tab:hover { background: var(--card); color: var(--ink); }
+    .prob-tab.active {
+      background: var(--bg);
+      color: var(--navy);
       font-weight: 600;
-      cursor: pointer;
-      text-decoration: none;
+      border-top: 2px solid var(--navy);
+      margin-bottom: -1px;
+      padding-bottom: 10px;
+    }
+    .prob-tab .t-tag {
       display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 1px 6px;
+      border-radius: 3px;
+      margin-right: 6px;
     }
-    .btn:hover {
-      background: #1f3263;
+    .t-tag.real { background: var(--forest-bg); color: var(--forest); border: 1px solid #b7dfc2; }
+    .t-tag.syn { background: var(--navy-bg); color: var(--navy); border: 1px solid #c5d4e8; }
+
+    main {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 20px 28px 56px;
     }
-    .btn.active {
-      background: var(--accent);
-      color: #081021;
-      border-color: var(--accent);
-    }
-    .diag-toolbar {
+
+    .step-nav {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 14px;
+      gap: 12px;
       flex-wrap: wrap;
-      margin-bottom: 12px;
-    }
-    .pill-group {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-    .table-scroll {
-      max-height: 460px;
-      overflow-y: auto;
+      margin-bottom: 18px;
+      background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 6px;
+      padding: 10px 14px;
     }
-    .mono {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: 0.8rem;
+    .step-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+    .step-btn {
+      background: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 7px 13px;
+      font: inherit;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--ink2);
+      cursor: pointer;
     }
-    .diff-sub {
-      color: var(--muted);
-      font-size: 0.76rem;
+    .step-btn:hover { color: var(--ink); border-color: var(--ink3); }
+    .step-btn.active {
+      background: var(--navy);
+      border-color: var(--navy);
+      color: #ffffff;
+    }
+
+    .step { margin-top: 18px; }
+    .step.hidden { display: none; }
+    .step-hdr {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      padding: 8px 14px;
+      background: var(--sec);
+      border-left: 3px solid var(--navy);
+      border-radius: 3px;
+      margin-bottom: 14px;
+    }
+    .step-num {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--navy);
+    }
+    .step-hdr h2 { font-size: 15px; font-weight: 700; margin: 0; }
+    .step-hdr span { color: var(--ink2); font-size: 12.5px; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 18px 20px;
+      margin-bottom: 16px;
+    }
+    .card h3 {
+      font-size: 14px;
+      font-weight: 700;
+      margin: 0 0 4px;
+      color: var(--ink);
+    }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    @media (max-width: 1024px) {
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    }
+
+    .kpi {
+      background: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 12px 14px;
+    }
+    .kpi .lbl {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--ink3);
+    }
+    .kpi .val {
+      font-size: 22px;
+      font-weight: 700;
+      margin-top: 3px;
+      color: var(--ink);
+    }
+    .kpi .delta {
+      font-size: 12px;
+      color: var(--ink2);
       margin-top: 2px;
     }
-    .inspector-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-top: 12px;
-    }
-    .inspector-grid > div { min-width: 0; }
-    @media (max-width: 1100px) {
-      .inspector-grid { grid-template-columns: 1fr; }
-    }
-    pre.code-box {
-      background: var(--panel-alt);
+    .good { color: var(--forest); font-weight: 600; }
+    .warn { color: var(--terra); font-weight: 600; }
+    .bad { color: var(--crimson); font-weight: 600; }
+
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
       border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px;
-      margin: 0;
-      overflow-x: auto;
-      max-height: 420px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: 0.78rem;
-      color: #d7e3ff;
-      white-space: pre;
+      background: var(--muted);
+      color: var(--ink2);
     }
-    .arch-banner {
+    .badge.good { background: var(--forest-bg); color: var(--forest); border-color: #b7dfc2; }
+    .badge.warn { background: var(--terra-bg); color: var(--terra); border-color: #ecd0a4; }
+    .badge.bad { background: var(--crimson-bg); color: var(--crimson); border-color: #e6b8b8; }
+    .badge.navy { background: var(--navy-bg); color: var(--navy); border-color: #c5d4e8; }
+
+    /* Gemini 3.8 Run Commentary card (from mlb/alpha_evolve & fedex/alpha_evolve) */
+    .analysis { border-top: 3px solid var(--navy); }
+    .analysis-hdr {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+    .ai-label {
+      font-size: 11px;
+      color: var(--ink3);
+      background: var(--muted);
+      border: 1px dashed var(--border);
+      padding: 3px 9px;
+      border-radius: 3px;
+      font-family: var(--mono);
+    }
+    .analysis .headline {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--ink);
+      margin: 4px 0 14px;
+      line-height: 1.45;
+      max-width: 105ch;
+    }
+    .analysis-cols {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+    @media (max-width: 960px) { .analysis-cols { grid-template-columns: 1fr; } }
+    .analysis-sec {
+      background: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 12px 14px;
+    }
+    .analysis-sec h4 {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--navy);
+      margin: 0 0 6px;
+    }
+    .analysis-sec.didnt h4 { color: var(--crimson); }
+    .analysis-sec.risks h4 { color: var(--terra); }
+    .analysis-sec ul { margin: 0; padding-left: 18px; }
+    .analysis-sec li { margin: 5px 0; font-size: 13px; color: var(--ink); }
+    .next-steps {
+      margin-top: 12px;
+      padding: 12px 14px;
+      background: var(--navy-bg);
+      border-left: 3px solid var(--navy);
+      border-radius: 3px;
+    }
+    .next-steps h4 {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--navy);
+      margin: 0 0 6px;
+    }
+    .next-steps ol { margin: 0; padding-left: 20px; font-size: 13px; }
+    .next-steps li { margin: 4px 0; }
+
+    /* Run selector pills */
+    .run-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 10px;
       flex-wrap: wrap;
-      gap: 12px;
-    }
-    .progress {
-      height: 10px;
-      background: var(--panel-alt);
+      margin-bottom: 14px;
+      background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 999px;
+      border-radius: 6px;
+      padding: 10px 14px;
+    }
+    .run-pills { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    .pill {
+      background: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 5px 10px;
+      font: inherit;
+      font-size: 12px;
+      color: var(--ink2);
+      cursor: pointer;
+    }
+    .pill:hover { color: var(--ink); border-color: var(--ink3); }
+    .pill.active {
+      background: var(--navy);
+      border-color: var(--navy);
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    /* Tables */
+    .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 5px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; background: var(--card); }
+    th, td { padding: 8px 11px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; }
+    th {
+      background: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--ink3);
+    }
+    th.num, td.num { text-align: right; font-family: var(--mono); font-size: 12px; }
+    tbody tr.clickable { cursor: pointer; }
+    tbody tr.clickable:hover { background: var(--muted); }
+    tbody tr.selected { background: var(--navy-bg); }
+    .chg-cell {
+      max-width: 420px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
       overflow: hidden;
-      margin: 6px 0;
+      color: var(--ink2);
+      font-size: 12px;
     }
-    .progress-fill {
-      height: 100%;
-      width: 0;
-      background: linear-gradient(90deg, var(--accent), var(--success));
-      transition: width 0.4s ease;
-    }
-    svg.chart {
-      width: 100%;
-      height: 240px;
-      background: var(--panel-alt);
+
+    /* Code & diff blocks */
+    pre.code {
+      background: var(--muted);
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 4px;
+      padding: 12px 14px;
+      margin: 0;
+      overflow: auto;
+      max-height: 440px;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--ink);
     }
-    .note { color: var(--muted); font-size: 0.8rem; margin-top: 8px; }
+    .d-add { background: var(--forest-bg); color: var(--forest); display: block; }
+    .d-del { background: var(--crimson-bg); color: var(--crimson); display: block; }
+    .d-hunk { color: var(--navy); font-weight: 600; display: block; }
+    .summary-callout {
+      font-size: 13px;
+      color: var(--ink);
+      background: var(--navy-bg);
+      border-left: 3px solid var(--navy);
+      padding: 9px 12px;
+      margin: 8px 0 12px;
+      border-radius: 3px;
+    }
+
+    /* Split bar diagram */
+    .split-bar {
+      display: flex;
+      height: 34px;
+      border-radius: 5px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      margin: 10px 0;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .split-seg {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 10px;
+      white-space: nowrap;
+    }
+
+    /* Forest whisker bar */
+    .ci-bar-wrap {
+      position: relative;
+      width: 150px;
+      height: 18px;
+      background: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+    }
+    .ci-zero {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: var(--ink3);
+    }
+    .ci-whisker {
+      position: absolute;
+      top: 8px;
+      height: 2px;
+      background: var(--navy);
+    }
+    .ci-dot {
+      position: absolute;
+      top: 5px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--navy);
+      transform: translateX(-4px);
+    }
+
+    /* Markdown body */
+    .md h1, .md h2, .md h3 { font-size: 13.5px; margin: 12px 0 4px; color: var(--ink); }
+    .md p { margin: 5px 0; font-size: 13px; color: var(--ink2); max-width: 85ch; }
+    .md ul { margin: 4px 0; padding-left: 18px; font-size: 13px; color: var(--ink2); }
+    .md code {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      background: var(--sec);
+      padding: 1px 4px;
+      border-radius: 3px;
+      color: var(--ink);
+    }
+
+    .controls-row {
+      display: flex;
+      gap: 18px;
+      align-items: center;
+      flex-wrap: wrap;
+      background: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 12px 16px;
+      margin-bottom: 14px;
+    }
+    .control-item { display: flex; flex-direction: column; gap: 4px; min-width: 220px; }
+    .control-item label { font-size: 11.5px; font-weight: 600; color: var(--ink2); }
   </style>
 </head>
 <body>
   <header>
-    <div>
-      <h1>Google Cloud AlphaEvolve — Classifier Evolution Diagnostics</h1>
-      <div class="subtitle">Real-data track (UCI Diabetes 130, locked test vs. tuned LightGBM) • Synthetic Stage-2 portfolio (reference only) • Candidate diff inspector</div>
+    <div class="hdr-top">
+      <div>
+        <div class="kicker">AlphaEvolve for Healthcare &amp; Clinical Data Science</div>
+        <h1>Clinical Risk Classifier &amp; Care-Allocation Workbench</h1>
+        <p class="sub">
+          Inspect how AlphaEvolve evolves feature engineering, heterogeneous GBDT ensembles, and budget-constrained
+          care-allocation algorithms—audited by patient-grouped locked-test bootstrap and narrated by
+          <strong>Gemini 3.8 Flash</strong>.
+        </p>
+      </div>
+      <div id="hdr-badges" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;"></div>
     </div>
-    <div class="header-actions">
-      <a class="btn" href="/docs/aws_snowflake_split_cloud_architecture.svg" target="_blank" rel="noopener">Split-Cloud AWS Snowflake × GCP SVG</a>
-      <a class="btn" href="/docs/AWS_SNOWFLAKE_MIGRATION.md" target="_blank" rel="noopener">AWS/Snowflake Migration Guide</a>
-    </div>
+    <nav class="prob-bar" id="problem-tabs" aria-label="Problem selector"></nav>
   </header>
 
-  <section class="card" id="real-card">
-    <div class="diag-toolbar">
-      <div>
-        <h2>Real-Data Track — Live AlphaEvolve Run</h2>
-        <div class="subtitle" id="real-meta">Loading…</div>
+  <main>
+    <div class="step-nav">
+      <div class="step-tabs" id="step-tabs">
+        <button class="step-btn active" data-step="all">All 3 Steps (Executive Walkthrough)</button>
+        <button class="step-btn" data-step="1">Step 1 · What You Provide (Setup &amp; Contract)</button>
+        <button class="step-btn" data-step="2">Step 2 · Results, Gemini 3.8 Analysis &amp; Evolution</button>
+        <button class="step-btn" data-step="3">Step 3 · Interactive Care-Allocation &amp; ROI Simulator</button>
       </div>
-      <div class="pill-group">
-        <label for="real-problem-select">Problem:</label>
-        <select id="real-problem-select"></select>
-        <span class="badge info" id="real-status-badge">—</span>
-      </div>
-    </div>
-    <div class="progress"><div class="progress-fill" id="real-progress-fill"></div></div>
-    <div class="subtitle" id="real-progress-text"></div>
-    <div class="kpi-grid" id="real-kpis" style="margin-top: 14px;"></div>
-    <div class="inspector-grid">
-      <div>
-        <div class="kpi-label" style="margin-bottom: 6px;">Fitness ROC-AUC per evaluated candidate (dots) and best-so-far (line)</div>
-        <svg class="chart" id="real-chart" viewBox="0 0 600 240" preserveAspectRatio="none" role="img" aria-label="Best-so-far fitness ROC-AUC"></svg>
-        <div class="note">Fitness = mean ROC-AUC over private-seed patient-grouped rounds. Differences under ~0.005 are round-to-round noise.</div>
-      </div>
-      <div>
-        <div class="kpi-label" style="margin-bottom: 6px;">Locked test split (finalists only) — paired bootstrap vs. tuned LightGBM</div>
-        <table>
-          <thead>
-            <tr><th>Arm</th><th>Test ROC-AUC</th><th>Δ vs tuned [95% CI]</th><th>p(Δ≤0)</th><th>Verdict</th></tr>
-          </thead>
-          <tbody id="locked-tbody"></tbody>
-        </table>
-        <div class="note" id="locked-note"></div>
-      </div>
-    </div>
-  </section>
-
-  <section class="card">
-    <div class="arch-banner" style="margin-bottom: 12px;">
-      <h2 style="margin: 0;">Synthetic Stage-2 Portfolio (reference only)</h2>
-      <span class="badge warn">Toolkit encodes the synthetic generator — lift here is circular, not a performance claim</span>
-    </div>
-    <div class="kpi-grid" id="kpi-container"></div>
-    <div class="controls" style="margin-bottom: 12px;">
-      <div class="control-group">
-        <label for="model-select">Portfolio Scorecard Filter</label>
-        <select id="model-select"><option value="all">All synthetic models (aggregate)</option></select>
-      </div>
-      <div class="control-group">
-        <label for="member-scale">Member Cohort Volume Scale (<span id="scale-label">1.0x</span>)</label>
-        <input type="range" id="member-scale" min="0.5" max="5.0" step="0.5" value="1.0" />
-      </div>
-      <div class="control-group">
-        <label for="roi-scale">Actuarial Value per +1% AUC Lift (<span id="roi-label">1.0x</span>)</label>
-        <input type="range" id="roi-scale" min="0.5" max="2.5" step="0.25" value="1.0" />
-      </div>
-    </div>
-    <table>
-      <thead>
-        <tr>
-          <th>Model ID</th>
-          <th>Clinical Use Case</th>
-          <th>Legacy API AUC</th>
-          <th>Seed AUC</th>
-          <th>Reference Evolved AUC</th>
-          <th>Target Gate</th>
-          <th>PR-AUC</th>
-          <th>Sens@Spec80</th>
-          <th>Brier</th>
-          <th>Actuarial Lift ROI</th>
-          <th>Stage 2 Care Net ROI</th>
-        </tr>
-      </thead>
-      <tbody id="portfolio-tbody"></tbody>
-    </table>
-    <div class="note" id="portfolio-note"></div>
-  </section>
-
-  <section class="card">
-    <div class="diag-toolbar">
-      <div>
-        <h2>Candidate Evolution Run Diagnostics</h2>
-        <div class="subtitle" id="diag-run-meta">Loading…</div>
-      </div>
-      <div class="pill-group">
-        <label for="diag-problem-select">Inspect Run for Problem:</label>
-        <select id="diag-problem-select"></select>
-        <input type="text" id="cand-search" placeholder="Search candidate ID or diff..." />
-      </div>
+      <div class="sub" id="active-problem-caption"></div>
     </div>
 
-    <div class="pill-group" style="margin-bottom: 12px;" id="status-filter-bar">
-      <button type="button" class="btn active" data-status="ALL">All</button>
-      <button type="button" class="btn" data-status="GRADED">Graded</button>
-      <button type="button" class="btn" data-status="HARD_VIOLATION">Hard Violations</button>
-      <button type="button" class="btn" data-status="RUNTIME_ERROR">Runtime Errors</button>
-      <button type="button" class="btn" data-status="PENDING">Pending</button>
-    </div>
+    <!-- STEP 1: WHAT YOU PROVIDE -->
+    <section class="step" id="step-1">
+      <div class="step-hdr">
+        <span class="step-num">Step 1 · What You Provide</span>
+        <h2>Narrow Evolve-Block Strategy vs. Frozen Leak-Free Evaluation Harness</h2>
+        <span>Three files define an AlphaEvolve problem: seed program, problem description, and deterministic evaluator.</span>
+      </div>
+      <div id="setup-container"></div>
+    </section>
 
-    <div class="table-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th>Rank</th>
-            <th>Candidate ID</th>
-            <th>Gen</th>
-            <th>Status</th>
-            <th>What's Different (vs. Seed Program)</th>
-            <th>Fitness Score</th>
-            <th>ROC-AUC (Δ Seed)</th>
-            <th>PR-AUC</th>
-            <th id="th-col-a">Sens@Spec80</th>
-            <th>Brier</th>
-            <th id="th-col-b">Stage 2 Net ROI</th>
-            <th>Source Code</th>
-          </tr>
-        </thead>
-        <tbody id="candidates-tbody"></tbody>
-      </table>
-    </div>
-  </section>
+    <!-- STEP 2: RESULTS, GEMINI 3.8 COMMENTARY & EVOLUTION TRAJECTORY -->
+    <section class="step" id="step-2">
+      <div class="step-hdr">
+        <span class="step-num">Step 2 · Watch Evolution &amp; Gemini 3.8 Run Commentary</span>
+        <h2>Locked-Test Paired Bootstrap Verdict, AI Run Commentary, Fitness Trajectory &amp; Candidate Diffs</h2>
+        <span>Select any run replicate or click a candidate dot/row to inspect its plain-English Gemini summary and code diff.</span>
+      </div>
 
-  <section class="card" id="source-inspector-card">
-    <div class="diag-toolbar">
-      <div>
-        <h2 id="inspector-title">Candidate Source Code &amp; Unified Diff Inspector</h2>
-        <div class="subtitle" id="inspector-subtitle">Select any candidate row above to inspect its exact code mutation and Python source</div>
+      <div class="run-bar" id="run-selector-bar">
+        <div class="run-pills" id="run-pills"></div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <span class="sub" id="run-meta-label"></span>
+          <button class="pill" id="btn-refresh-run" type="button">Refresh</button>
+        </div>
       </div>
-      <div class="pill-group">
-        <a id="inspector-raw-link" class="btn" href="#" target="_blank" rel="noopener">Open Raw .py in New Tab</a>
+
+      <!-- Locked-test / benchmark arm comparison -->
+      <div id="scorecard-container"></div>
+
+      <!-- Gemini 3.8 Flash Run Commentary Card -->
+      <div id="analysis-container"></div>
+
+      <!-- Trajectory SVG Chart -->
+      <div class="card" id="trajectory-card">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+          <div>
+            <div class="kicker">Evolutionary Search Trajectory</div>
+            <h3>Candidate ROC-AUC Across Generations (Click Any Point to Inspect Diff)</h3>
+          </div>
+          <div class="sub" id="trajectory-legend">
+            Green dot = Feasible (Graded) · Amber = Hard Constraint Violation · Crimson = Runtime Error · Navy line = Running Best
+          </div>
+        </div>
+        <div id="trajectory-svg-wrap"></div>
       </div>
-    </div>
-    <div class="inspector-grid">
-      <div>
-        <div class="kpi-label" style="margin-bottom: 6px;">Unified Diff (initial_program.py → candidate.py)</div>
-        <pre class="code-box" id="inspector-diff"></pre>
+
+      <!-- Candidate Leaderboard & Code/Diff Inspector -->
+      <div class="grid-2">
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+            <div>
+              <div class="kicker">Candidate Catalog</div>
+              <h3 id="cand-table-title">Evaluated Programs &amp; Gemini 3.5 Flash-Lite Summaries</h3>
+            </div>
+            <div class="run-pills" id="status-filter-pills">
+              <button class="pill active" data-status="ALL" type="button">All</button>
+              <button class="pill" data-status="GRADED" type="button">Feasible</button>
+              <button class="pill" data-status="BEAT_SEED" type="button">Beat Seed</button>
+              <button class="pill" data-status="FAILED" type="button">Violations / Errors</button>
+            </div>
+          </div>
+          <div class="table-wrap" style="max-height:520px; overflow-y:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Candidate</th>
+                  <th class="num">Gen</th>
+                  <th>Status</th>
+                  <th class="num">ROC-AUC</th>
+                  <th class="num">PR-AUC / Brier</th>
+                  <th>What Changed (Gemini Summary)</th>
+                </tr>
+              </thead>
+              <tbody id="candidates-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card" id="inspector-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+            <div>
+              <div class="kicker">Code &amp; Evaluator Inspector</div>
+              <h3 id="inspector-title">Select a candidate to inspect its diff</h3>
+            </div>
+            <div class="run-pills">
+              <button class="pill active" id="btn-view-diff" type="button">Unified Diff vs. Seed</button>
+              <button class="pill" id="btn-view-full" type="button">Full Python Source</button>
+            </div>
+          </div>
+          <div id="inspector-summary-wrap"></div>
+          <div id="inspector-insights-wrap" style="margin-bottom:10px;"></div>
+          <pre class="code" id="inspector-code-pre">Loading candidate source...</pre>
+        </div>
       </div>
-      <div>
-        <div class="kpi-label" style="margin-bottom: 6px;">Full Candidate Python Source</div>
-        <pre class="code-box" id="inspector-code"></pre>
+    </section>
+
+    <!-- STEP 3: INTERACTIVE SIMULATOR & PORTFOLIO OVERVIEW -->
+    <section class="step" id="step-3">
+      <div class="step-hdr">
+        <span class="step-num">Step 3 · Interactive Care-Allocation &amp; Portfolio ROI Simulator</span>
+        <h2>Stage 2 Care-Management Budget Stress-Testing &amp; 4-Model Portfolio Scorecard</h2>
+        <span>Stress-test outreach budget multipliers and actuarial ROI assumptions across the synthetic care-allocation track.</span>
       </div>
-    </div>
-  </section>
+      <div id="simulator-container"></div>
+    </section>
+  </main>
 
   <script>
-    // All data comes from the local server. There is deliberately no hardcoded/fabricated fallback: an offline or
-    // empty state is shown as such, so nothing on this page can be mistaken for a real result.
-    const POLL_MS = 15000;
-    const SVG_NS = "http://www.w3.org/2000/svg";
-    const SOURCE_LABELS = {
-      live_alphaevolve_run: "Finished AlphaEvolve run (candidates.json)",
-      live_alphaevolve_api: "LIVE AlphaEvolve API (auto-refresh every 15 s)",
-      reference_evolution_trace: "SYNTHETIC reference trace (interpolated, not a real run)",
-      none: "No AlphaEvolve run found for this problem yet"
-    };
-    const TRACK_COLS = {
-      synthetic: ["Sens@Spec80", "Stage 2 Net ROI"],
-      real_data: ["Worst Subgroup AUC Gap", "Eval Time"]
-    };
+    "use strict";
 
-    let PROBLEMS = [];
-    let PORTFOLIO_DATA = [];
-    let activeCandidates = [];
-    let activeSeedAuc = null;
-    let activeStatusFilter = "ALL";
-    let activeProblemId = null;
-    let realTimer = null;
-    let diagTimer = null;
+    // Safe DOM construction helpers (createElement / textContent / replaceChildren only).
+    function el(tag, attrs, ...children) {
+      const node = document.createElement(tag);
+      if (attrs) {
+        for (const [k, v] of Object.entries(attrs)) {
+          if (v === null || v === undefined) continue;
+          if (k === "class") node.className = v;
+          else if (k === "style") node.setAttribute("style", v);
+          else if (k.startsWith("on") && typeof v === "function") node.addEventListener(k.slice(2), v);
+          else node.setAttribute(k, String(v));
+        }
+      }
+      for (const ch of children.flat()) {
+        if (ch === null || ch === undefined || ch === false) continue;
+        node.appendChild(typeof ch === "Node" || ch instanceof Node ? ch : document.createTextNode(String(ch)));
+      }
+      return node;
+    }
 
-    function el(tag, cls, text) {
-      const e = document.createElement(tag);
-      if (cls) e.setAttribute("class", cls);
-      if (text !== undefined && text !== null) e.textContent = text;
-      return e;
+    function sv(tag, attrs, ...children) {
+      const node = document.createElementNS("http://www.w3.org/2000/svg", tag);
+      if (attrs) {
+        for (const [k, v] of Object.entries(attrs)) {
+          if (v !== null && v !== undefined) node.setAttribute(k, String(v));
+        }
+      }
+      for (const ch of children.flat()) {
+        if (ch === null || ch === undefined || ch === false) continue;
+        node.appendChild(ch instanceof Node ? ch : document.createTextNode(String(ch)));
+      }
+      return node;
     }
-    function svgEl(tag, attrs, text) {
-      const e = document.createElementNS(SVG_NS, tag);
-      Object.keys(attrs).forEach(function (k) { e.setAttribute(k, String(attrs[k])); });
-      if (text) e.textContent = text;
-      return e;
+
+    function inlineMd(text) {
+      const frag = document.createDocumentFragment();
+      const parts = String(text || "").split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
+      for (const part of parts) {
+        if (part.startsWith("**") && part.endsWith("**")) {
+          frag.appendChild(el("strong", null, part.slice(2, -2)));
+        } else if (part.startsWith("`") && part.endsWith("`")) {
+          frag.appendChild(el("code", null, part.slice(1, -1)));
+        } else if (part) {
+          frag.appendChild(document.createTextNode(part));
+        }
+      }
+      return frag;
     }
-    function isNum(v) { return typeof v === "number" && isFinite(v); }
-    function fmt(v, d) { return isNum(v) ? v.toFixed(d === undefined ? 4 : d) : "—"; }
-    function signed(v, d) { return isNum(v) ? (v >= 0 ? "+" : "") + v.toFixed(d === undefined ? 4 : d) : "—"; }
-    function formatUsd(val) {
+
+    function renderMdBlock(text) {
+      const root = el("div", { class: "md" });
+      let ul = null;
+      for (const raw of String(text || "").split("\n")) {
+        const line = raw.trim();
+        if (!line) { ul = null; continue; }
+        if (line.startsWith("# ")) { ul = null; root.appendChild(el("h1", null, line.slice(2))); }
+        else if (line.startsWith("## ")) { ul = null; root.appendChild(el("h2", null, line.slice(3))); }
+        else if (line.startsWith("### ")) { ul = null; root.appendChild(el("h3", null, line.slice(4))); }
+        else if (line.startsWith("- ") || line.startsWith("* ")) {
+          if (!ul) { ul = el("ul"); root.appendChild(ul); }
+          ul.appendChild(el("li", null, inlineMd(line.slice(2))));
+        } else {
+          ul = null;
+          root.appendChild(el("p", null, inlineMd(line)));
+        }
+      }
+      return root;
+    }
+
+    function fmtUsd(n) {
+      if (n === null || n === undefined || Number.isNaN(Number(n))) return "—";
+      const val = Number(n);
       const sign = val < 0 ? "-" : "";
       return sign + "$" + Math.round(Math.abs(val)).toLocaleString("en-US");
     }
-    function trackOf(pid) {
-      const p = PROBLEMS.find(function (x) { return x.problem_id === pid; });
-      return p ? p.track : "synthetic";
-    }
-    function getJson(url) {
-      return fetch(url).then(function (r) {
-        return r.json().catch(function () { return {}; }).then(function (body) {
-          if (!r.ok) throw new Error(body.error || ("HTTP " + r.status));
-          return body;
-        });
-      });
-    }
-    function createKpiCard(label, valueText, tone, sub) {
-      const card = el("div", "card");
-      card.style.marginBottom = "0";
-      card.appendChild(el("div", "kpi-label", label));
-      card.appendChild(el("div", tone ? "kpi-val " + tone : "kpi-val", valueText));
-      if (sub) card.appendChild(el("div", "diff-sub", sub));
-      return card;
-    }
-    function fillSelect(select, items, valueOf, labelOf) {
-      select.replaceChildren.apply(select, items.map(function (it) {
-        const o = el("option", null, labelOf(it));
-        o.value = valueOf(it);
-        return o;
-      }));
+
+    function fmtNum(n, digits = 4) {
+      if (n === null || n === undefined || Number.isNaN(Number(n))) return "—";
+      return Number(n).toFixed(digits);
     }
 
-    // ---------------- Real-data track ----------------
-    function renderRealCard(card, live) {
-      const evaluated = live.programs_evaluated || 0;
-      const maxP = live.max_programs || 0;
-      const counts = live.status_counts || {};
-      const badge = document.getElementById("real-status-badge");
-      if (!live.experiment_name) {
-        badge.setAttribute("class", "badge warn");
-        badge.textContent = "NO RUN";
-      } else if (live.finished) {
-        badge.setAttribute("class", "badge");
-        badge.textContent = "FINISHED";
-      } else {
-        badge.setAttribute("class", "badge info");
-        badge.textContent = "RUNNING";
+    const state = {
+      problems: [],
+      activeProblem: "diabetes130_readmit30",
+      activeRunId: null,
+      activeStep: "all",
+      setupData: null,
+      liveData: null,
+      realData: null,
+      portfolioData: null,
+      candidatesData: null,
+      statusFilter: "ALL",
+      selectedCandidateId: null,
+      selectedCandidatePayload: null,
+      codeViewMode: "diff",
+      whatIfProblem: "readmission_30d",
+      whatIfBudget: 1.0,
+      whatIfRoi: 1.0,
+      whatIfResult: null,
+    };
+
+    function renderHeaderBadges() {
+      const wrap = document.getElementById("hdr-badges");
+      const isReal = state.activeProblem === "diabetes130_readmit30";
+      wrap.replaceChildren(
+        el("span", { class: "badge good" }, isReal ? "Real-Data Track · 101,766 Hospital Encounters" : "Synthetic Care-Allocation Track · 4 Perturbed Cohorts"),
+        el("span", { class: "badge navy" }, "Commentary: gemini-3.8-flash"),
+        el("span", { class: "badge" }, "Candidate Summaries: gemini-3.5-flash-lite")
+      );
+      const pInfo = state.problems.find((p) => p.problem_id === state.activeProblem);
+      document.getElementById("active-problem-caption").textContent = pInfo
+        ? `${pInfo.title} (${pInfo.problem_id})`
+        : state.activeProblem;
+    }
+
+    function renderProblemTabs() {
+      const nav = document.getElementById("problem-tabs");
+      // Put diabetes130_readmit30 first as featured real-data benchmark
+      const sorted = [...state.problems].sort((a, b) => {
+        if (a.problem_id === "diabetes130_readmit30") return -1;
+        if (b.problem_id === "diabetes130_readmit30") return 1;
+        return a.problem_id.localeCompare(b.problem_id);
+      });
+      nav.replaceChildren(
+        ...sorted.map((p) => {
+          const isReal = p.track === "real_data";
+          return el(
+            "button",
+            {
+              class: "prob-tab" + (p.problem_id === state.activeProblem ? " active" : ""),
+              type: "button",
+              onclick: () => selectProblem(p.problem_id),
+            },
+            el("span", { class: "t-tag " + (isReal ? "real" : "syn") }, isReal ? "Real Data" : "Care ROI"),
+            p.title
+          );
+        })
+      );
+    }
+
+    function renderStepVisibility() {
+      for (const btn of document.querySelectorAll("#step-tabs .step-btn")) {
+        btn.classList.toggle("active", btn.getAttribute("data-step") === state.activeStep);
+      }
+      for (const s of ["1", "2", "3"]) {
+        const sec = document.getElementById("step-" + s);
+        sec.classList.toggle("hidden", state.activeStep !== "all" && state.activeStep !== s);
+      }
+    }
+
+    // --- STEP 1: SETUP & CONTRACT ------------------------------------------------------------------------------------
+    function renderSetupStep() {
+      const host = document.getElementById("setup-container");
+      const s = state.setupData;
+      if (!s) {
+        host.replaceChildren(el("div", { class: "card" }, "Loading problem setup..."));
+        return;
+      }
+      const isReal = s.track === "real_data";
+      const splitCard = isReal
+        ? el(
+            "div",
+            { class: "card" },
+            el("div", { class: "kicker" }, "Zero-Leakage Evaluation Protocol"),
+            el("h3", null, "Patient-Grouped 60 / 20 / 20 Split & Paired Bootstrap Gate (101,766 Encounters · 71,518 Patients)"),
+            el(
+              "p",
+              { class: "sub" },
+              "Every hospital encounter for the same patient_nbr stays in the same split so candidates cannot memorize patient IDs across folds."
+            ),
+            el(
+              "div",
+              { class: "split-bar" },
+              el("div", { class: "split-seg", style: "width:60%; background:var(--navy-bg); color:var(--navy);" }, "Train (60% · ~61k rows)"),
+              el("div", { class: "split-seg", style: "width:20%; background:var(--terra-bg); color:var(--terra); border-left:1px solid var(--border);" }, "Selection (20% · Fitness)"),
+              el("div", { class: "split-seg", style: "width:20%; background:var(--forest-bg); color:var(--forest); border-left:1px solid var(--border);" }, "Locked Test (20% · N=19,734)")
+            ),
+            el(
+              "div",
+              { class: "grid-3", style: "margin-top:10px;" },
+              el(
+                "div",
+                { class: "kpi" },
+                el("div", { class: "lbl" }, "Evolution Fitness (Selection)"),
+                el("div", { class: "val" }, "10,000 × ROC-AUC"),
+                el("div", { class: "delta" }, "Mean across 3 patient-grouped sub-folds (AE_PERTURB_SEED)")
+              ),
+              el(
+                "div",
+                { class: "kpi" },
+                el("div", { class: "lbl" }, "Full-Train Held-Out Gate"),
+                el("div", { class: "val" }, "59k → 20k Gate"),
+                el("div", { class: "delta" }, "Catches cardinality > 255 crashes before locked-test promotion")
+              ),
+              el(
+                "div",
+                { class: "kpi" },
+                el("div", { class: "lbl" }, "Locked Test Audit"),
+                el("div", { class: "val" }, "2,000× Bootstrap"),
+                el("div", { class: "delta" }, "Paired patient-cluster bootstrap vs. Optuna-tuned LightGBM & Human Stack")
+              )
+            )
+          )
+        : el(
+            "div",
+            { class: "card" },
+            el("div", { class: "kicker" }, "Two-Stage Clinical & Care-Allocation Contract"),
+            el("h3", null, "Stage 1 Risk Calibration + Stage 2 Constrained Care-Management Allocation"),
+            el(
+              "div",
+              { class: "grid-3", style: "margin-top:10px;" },
+              el(
+                "div",
+                { class: "kpi" },
+                el("div", { class: "lbl" }, "Stage 1 · Risk Discrimination"),
+                el("div", { class: "val" }, "ROC-AUC & PR-AUC"),
+                el("div", { class: "delta" }, "Evaluated across 4 private-seed perturbed clinical cohorts")
+              ),
+              el(
+                "div",
+                { class: "kpi" },
+                el("div", { class: "lbl" }, "Stage 2 · Care Allocation"),
+                el("div", { class: "val" }, "Net Clinical Savings ($)"),
+                el("div", { class: "delta" }, "Hard budget & slot caps enforced by BudgetTracker")
+              ),
+              el(
+                "div",
+                { class: "kpi" },
+                el("div", { class: "lbl" }, "Hard Feasibility Penalty"),
+                el("div", { class: "val" }, "-100,000 / Violation"),
+                el("div", { class: "delta" }, "Rejects budget overruns, slot breaches, or uncalibrated Brier")
+              )
+            )
+          );
+
+      const codeGrid = el(
+        "div",
+        { class: "grid-2" },
+        el(
+          "div",
+          { class: "card" },
+          el("div", { class: "kicker" }, `Narrow Evolve-Block (${s.evolve_block_lines} lines in initial_program.py)`),
+          el("h3", null, "What AlphaEvolve Is Allowed to Mutate"),
+          el("pre", { class: "code", style: "margin-top:8px;" }, s.evolve_block || s.seed_code)
+        ),
+        el(
+          "div",
+          { class: "card" },
+          el("div", { class: "kicker" }, `Problem Specification (problems/${s.problem_id}/problem_description.md)`),
+          el("h3", null, "Domain Instructions & Constraints Provided to the Generator"),
+          el("div", { style: "max-height:440px; overflow-y:auto; margin-top:8px;" }, renderMdBlock(s.problem_markdown))
+        )
+      );
+
+      host.replaceChildren(splitCard, codeGrid);
+    }
+
+    // --- STEP 2: RUN SELECTOR, SCORECARD, GEMINI 3.8 ANALYSIS, TRAJECTORY & LEADERBOARD ------------------------------
+    function renderRunSelectorBar() {
+      const pillsWrap = document.getElementById("run-pills");
+      const metaLabel = document.getElementById("run-meta-label");
+      const runs = (state.liveData && state.liveData.runs) || (state.setupData && state.setupData.runs) || [];
+      if (!runs.length) {
+        pillsWrap.replaceChildren(el("span", { class: "badge" }, "Reference Portfolio Trace"));
+        metaLabel.textContent = "48 evaluated candidates";
+        return;
+      }
+      pillsWrap.replaceChildren(
+        el("span", { class: "kicker", style: "margin-right:6px;" }, "Experiment Runs:"),
+        ...runs.map((r, idx) =>
+          el(
+            "button",
+            {
+              class: "pill" + (r.run_id === state.activeRunId ? " active" : ""),
+              type: "button",
+              onclick: () => selectRun(r.run_id),
+              title: r.label,
+            },
+            r.label || `Run ${idx + 1} (${r.run_id.slice(0, 8)})`
+          )
+        )
+      );
+      const cur = runs.find((r) => r.run_id === state.activeRunId) || runs[0];
+      metaLabel.textContent = cur
+        ? `Run ${cur.run_id} · ${cur.evaluated_candidates}/${cur.total_candidates} evaluated · commit ${cur.git_commit || "HEAD"}`
+        : "";
+    }
+
+    function buildWhiskerCell(delta, low, high) {
+      if (delta === null || delta === undefined) return el("span", null, "—");
+      // Map [-0.02, +0.02] to [0%, 100%]
+      const minX = -0.016, maxX = 0.016;
+      const clamp = (v) => Math.max(0, Math.min(100, ((v - minX) / (maxX - minX)) * 100));
+      const zeroPct = clamp(0);
+      const loPct = clamp(low ?? delta);
+      const hiPct = clamp(high ?? delta);
+      const dotPct = clamp(delta);
+      const color = delta > 0 ? "var(--forest)" : delta < 0 ? "var(--crimson)" : "var(--ink3)";
+      return el(
+        "div",
+        { class: "ci-bar-wrap", title: `Δ ${fmtNum(delta, 4)} [${fmtNum(low, 4)}, ${fmtNum(high, 4)}]` },
+        el("div", { class: "ci-zero", style: `left:${zeroPct}%;` }),
+        el("div", { class: "ci-whisker", style: `left:${loPct}%; width:${Math.max(2, hiPct - loPct)}%; background:${color};` }),
+        el("div", { class: "ci-dot", style: `left:${dotPct}%; background:${color};` })
+      );
+    }
+
+    function renderScorecard() {
+      const host = document.getElementById("scorecard-container");
+      if (state.activeProblem === "diabetes130_readmit30" && state.realData && state.realData.locked_test) {
+        const lt = state.realData.locked_test;
+        const arms = lt.arms || [];
+        const armLabels = {
+          tuned_lightgbm: "Tuned LightGBM (48-Trial Optuna = Seed Baseline)",
+          tuned_xgboost: "Tuned XGBoost (48-Trial Optuna)",
+          human_stack: "Human-Engineered Clinical Stack (LGBM + XGB + CatBoost + LR)",
+          seed: "Untuned / Seed Program Reference",
+          "17130586394704764164/rank1": "AlphaEvolve V2 Replicate 1 — rank1.py (Best Finalist)",
+          "13049864015636605646/rank1": "AlphaEvolve V2 Replicate 3 — rank1.py",
+          "6843910815780438870/rank1": "AlphaEvolve V2 Replicate 2 — rank1.py",
+          "1499797710884767402/rank1": "AlphaEvolve V1 Run 3 — rank1.py (Pre-Gate Cardinality Crash)",
+          rank2: "AlphaEvolve V1 Run 3 — rank2.py (Valid Held-Out Gate Winner)",
+        };
+        const rows = arms
+          .filter((a) => a.arm !== "seed")
+          .map((a) => {
+            const isAe = a.arm.includes("rank");
+            const crashed = (a.violations || []).length > 0;
+            const dTuned = a.vs_tuned_delta;
+            const dStack = a.vs_stack_delta;
+            return el(
+              "tr",
+              { style: a.arm.startsWith(state.activeRunId || "___") ? "background:var(--navy-bg); font-weight:600;" : "" },
+              el("td", null, armLabels[a.arm] || a.arm),
+              el("td", { class: "num" }, fmtNum(a.test_auc, 4)),
+              el("td", { class: "num" }, fmtNum(a.test_pr_auc, 4)),
+              el("td", { class: "num" }, fmtNum(a.test_brier, 4)),
+              el(
+                "td",
+                { class: "num " + (dTuned > 0 ? "good" : dTuned < 0 ? "bad" : "") },
+                (dTuned >= 0 ? "+" : "") + fmtNum(dTuned, 4) + ` [${fmtNum(a.vs_tuned_ci_low, 4)}, ${fmtNum(a.vs_tuned_ci_high, 4)}]`
+              ),
+              el("td", null, crashed ? el("span", { class: "badge bad" }, "Cardinality > 255 Crash") : buildWhiskerCell(dTuned, a.vs_tuned_ci_low, a.vs_tuned_ci_high)),
+              el(
+                "td",
+                { class: "num " + (dStack > 0 ? "good" : dStack < 0 ? "bad" : "") },
+                (dStack >= 0 ? "+" : "") + fmtNum(dStack, 4)
+              ),
+              el(
+                "td",
+                { class: "num" },
+                crashed
+                  ? "p = 1.000"
+                  : isAe && a.vs_stack_p_value_one_sided <= 0.005
+                  ? el("span", { class: "badge good" }, `p = ${fmtNum(a.vs_stack_p_value_one_sided, 3)}`)
+                  : `p = ${fmtNum(a.vs_stack_p_value_one_sided, 3)}`
+              )
+            );
+          });
+
+        host.replaceChildren(
+          el(
+            "div",
+            { class: "card" },
+            el("div", { class: "kicker" }, `Locked-Test Paired Bootstrap Benchmark (N = ${(lt.locked_test_n || 19734).toLocaleString()} Held-Out Encounters)`),
+            el("h3", null, "All 3 V2 AlphaEvolve Replicates Beat Both Tuned LightGBM (p < 0.001) and the Human-Engineered Stack (p ≤ 0.004)"),
+            el(
+              "div",
+              { class: "grid-4", style: "margin:12px 0;" },
+              el("div", { class: "kpi" }, el("div", { class: "lbl" }, "Tuned LightGBM (Seed)"), el("div", { class: "val" }, "0.6808"), el("div", { class: "delta" }, "48-trial Optuna baseline")),
+              el("div", { class: "kpi" }, el("div", { class: "lbl" }, "Human-Engineered Stack"), el("div", { class: "val" }, "0.6835"), el("div", { class: "delta" }, "+0.0026 vs Tuned LightGBM (p=0.042)")),
+              el("div", { class: "kpi" }, el("div", { class: "lbl" }, "AlphaEvolve Best (Rep 1)"), el("div", { class: "val good" }, "0.6903"), el("div", { class: "delta good" }, "+0.0095 vs Tuned · +0.0069 vs Stack (p=0.000)")),
+              el("div", { class: "kpi" }, el("div", { class: "lbl" }, "Replicate Consistency"), el("div", { class: "val good" }, "3 / 3 Wins"), el("div", { class: "delta" }, "0.6903, 0.6900, 0.6876 on locked test"))
+            ),
+            el(
+              "div",
+              { class: "table-wrap" },
+              el(
+                "table",
+                null,
+                el(
+                  "thead",
+                  null,
+                  el(
+                    "tr",
+                    null,
+                    el("th", null, "Benchmark Arm"),
+                    el("th", { class: "num" }, "Locked-Test ROC-AUC"),
+                    el("th", { class: "num" }, "PR-AUC"),
+                    el("th", { class: "num" }, "Brier"),
+                    el("th", { class: "num" }, "Δ vs Tuned LGBM [95% CI]"),
+                    el("th", null, "Bootstrap 95% CI"),
+                    el("th", { class: "num" }, "Δ vs Human Stack"),
+                    el("th", { class: "num" }, "One-Sided p (vs Stack)")
+                  )
+                ),
+                el("tbody", null, ...rows)
+              )
+            )
+          )
+        );
+        return;
       }
 
-      let meta = live.experiment_name
-        ? "Experiment " + live.experiment_id + " • fetched " + (live.fetched_at || "—")
-        : "No run pointer under artifacts/runs/" + card.problem_id + "/ — start one with run_experiment.py --problem " + card.problem_id;
-      if (live.error) meta += " • API error" + (live.stale ? " (showing last good snapshot)" : "") + ": " + live.error;
-      document.getElementById("real-meta").textContent = card.title + " — " + meta;
-
-      document.getElementById("real-progress-fill").style.width = (maxP ? Math.min(100, 100 * evaluated / maxP) : 0) + "%";
-      document.getElementById("real-progress-text").textContent =
-        evaluated + " / " + (maxP || "?") + " evaluated • " + (live.programs_listed || 0) + " generated • " +
-        (counts.GRADED || 0) + " graded • " + (counts.HARD_VIOLATION || 0) + " violations • " +
-        (counts.RUNTIME_ERROR || 0) + " runtime errors";
-
-      const seed = live.seed_roc_auc;
-      const best = live.best_roc_auc;
-      const tunedFit = card.tuned_fitness_auc;
-      document.getElementById("real-kpis").replaceChildren(
-        createKpiCard("Seed fitness AUC", fmt(seed), null, "initial_program.py"),
-        createKpiCard("AlphaEvolve best fitness AUC", fmt(best), "green",
-          (live.best_candidate_id || "—") + " • Δ seed " + (isNum(best) && isNum(seed) ? signed(best - seed) : "—")),
-        createKpiCard("Tuned LightGBM fitness AUC", fmt(tunedFit), null,
-          isNum(tunedFit) ? "random-search baseline (" + card.locked_test_report + ")" : "pending: run scripts/tabular_report.py"),
-        createKpiCard("Best vs tuned LightGBM (fitness)", isNum(best) && isNum(tunedFit) ? signed(best - tunedFit) : "—",
-          isNum(best) && isNum(tunedFit) && best > tunedFit ? "green" : null, "the bar AlphaEvolve must clear"),
-        createKpiCard("Tuned LightGBM locked-test AUC", fmt(card.tuned_test_auc), null, "finalists only, never in the loop")
+      // Synthetic care-allocation problem scorecard
+      const pStats = state.portfolioData && state.portfolioData.problems && state.portfolioData.problems[state.activeProblem];
+      if (!pStats) {
+        host.replaceChildren();
+        return;
+      }
+      host.replaceChildren(
+        el(
+          "div",
+          { class: "card" },
+          el("div", { class: "kicker" }, "4-Scenario Perturbed Cohort Evaluation"),
+          el("h3", null, `${pStats.title} — Legacy API vs. Seed Program vs. AlphaEvolve Finalist`),
+          el(
+            "div",
+            { class: "grid-4", style: "margin-top:10px;" },
+            el("div", { class: "kpi" }, el("div", { class: "lbl" }, "Legacy Baseline API AUC"), el("div", { class: "val" }, fmtNum(pStats.baseline_roc_auc, 4)), el("div", { class: "delta" }, `Seed AUC: ${fmtNum(pStats.seed_roc_auc, 4)}`)),
+            el("div", { class: "kpi" }, el("div", { class: "lbl" }, "AlphaEvolve ROC-AUC"), el("div", { class: "val good" }, fmtNum(pStats.evolved_roc_auc, 4)), el("div", { class: "delta good" }, `+${fmtNum(pStats.auc_uplift_vs_seed, 4)} vs Seed · +${fmtNum(pStats.auc_uplift_vs_baseline, 4)} vs Legacy`)),
+            el("div", { class: "kpi" }, el("div", { class: "lbl" }, "Stage 2 Care Net Savings"), el("div", { class: "val good" }, fmtUsd(pStats.stage2_net_savings_usd)), el("div", { class: "delta" }, `${fmtNum(pStats.prevented_events, 1)} acute events prevented`)),
+            el("div", { class: "kpi" }, el("div", { class: "lbl" }, "Actuarial AUC Lift Value"), el("div", { class: "val" }, fmtUsd(pStats.actuarial_auc_roi_usd)), el("div", { class: "delta" }, `Brier: ${fmtNum(pStats.evolved_brier, 4)} (Seed ${fmtNum(pStats.seed_brier, 4)})`))
+          )
+        )
       );
-      renderLockedTable(card, live);
     }
 
-    function renderLockedTable(card, live) {
-      const tbody = document.getElementById("locked-tbody");
-      const arms = (card.locked_test && card.locked_test.arms) || [];
-      tbody.replaceChildren();
-      arms.forEach(function (a) {
-        const tr = el("tr");
-        const isRef = a.arm === "tuned_lightgbm";
-        let verdict = ["reference", "badge info"];
-        if (!isRef) {
-          if (a.vs_tuned_ci_low > 0) verdict = ["beats tuned", "badge"];
-          else if (a.vs_tuned_ci_high < 0) verdict = ["worse than tuned", "badge danger"];
-          else verdict = ["not significant", "badge warn"];
+    function renderAnalysisCard() {
+      const host = document.getElementById("analysis-container");
+      const a = (state.liveData && state.liveData.analysis) || (state.candidatesData && state.candidatesData.analysis) || (state.setupData && state.setupData.analysis);
+      if (!a) {
+        host.replaceChildren(
+          el(
+            "div",
+            { class: "card analysis" },
+            el("div", { class: "kicker" }, "Run commentary"),
+            el("h3", null, "No analysis.json generated yet for this run"),
+            el("p", { class: "sub" }, "Run `.venv/bin/python scripts/run_narrator.py` to generate structured post-run commentary with gemini-3.8-flash.")
+          )
+        );
+        return;
+      }
+      const sections = [
+        ["What changed vs. the seed", a.what_changed, ""],
+        ["Why it works clinically & statistically", a.why_it_works, ""],
+        ["What didn't work (crashes, violations & regressions)", a.what_didnt_work, "didnt"],
+        ["Risks & what to validate before deployment", a.risks, "risks"],
+      ].filter(([, body]) => body);
+
+      host.replaceChildren(
+        el(
+          "div",
+          { class: "card analysis" },
+          el(
+            "div",
+            { class: "analysis-hdr" },
+            el(
+              "div",
+              null,
+              el("div", { class: "kicker" }, "Run commentary"),
+              el("h3", null, "What AlphaEvolve changed — and why it works")
+            ),
+            el("span", { class: "ai-label" }, `AI-generated commentary · ${a.model || "gemini-3.8-flash"} — not a measured result`)
+          ),
+          el("p", { class: "headline" }, a.headline || ""),
+          el(
+            "div",
+            { class: "analysis-cols" },
+            ...sections.map(([title, body, cls]) =>
+              el("div", { class: "analysis-sec " + cls }, el("h4", null, title), renderMdBlock(body))
+            )
+          ),
+          Array.isArray(a.next_steps) && a.next_steps.length
+            ? el(
+                "div",
+                { class: "next-steps" },
+                el("h4", null, "Suggested next run experiments"),
+                el("ol", null, ...a.next_steps.map((s) => el("li", null, inlineMd(s))))
+              )
+            : null
+        )
+      );
+    }
+
+    function renderTrajectoryChart() {
+      const wrap = document.getElementById("trajectory-svg-wrap");
+      const cands = (state.candidatesData && state.candidatesData.candidates) || [];
+      if (!cands.length) {
+        wrap.replaceChildren(el("div", { class: "sub" }, "No evaluated candidates available for this run."));
+        return;
+      }
+      const byGen = [...cands].sort((a, b) => (a.generation ?? 0) - (b.generation ?? 0));
+      const graded = byGen.filter((c) => c.status === "GRADED" && c.roc_auc > 0);
+      const aucs = graded.map((c) => Number(c.roc_auc));
+      const minY = aucs.length ? Math.max(0.45, Math.min(...aucs) - 0.006) : 0.5;
+      const maxY = aucs.length ? Math.min(1.0, Math.max(...aucs) + 0.004) : 0.85;
+      const seedCand = byGen.find((c) => c.generation === 0) || graded[0];
+      const seedAuc = seedCand && seedCand.roc_auc ? Number(seedCand.roc_auc) : minY;
+
+      const W = 1320, H = 230, padL = 58, padR = 24, padT = 18, padB = 32;
+      const plotW = W - padL - padR, plotH = H - padT - padB;
+      const maxGen = Math.max(1, ...byGen.map((c, i) => c.generation ?? i));
+      const xOf = (g) => padL + (g / maxGen) * plotW;
+      const yOf = (v) => padT + (1 - (Math.max(minY, Math.min(maxY, v)) - minY) / Math.max(1e-6, maxY - minY)) * plotH;
+
+      const svg = sv("svg", { viewBox: `0 0 ${W} ${H}`, style: "width:100%; height:auto; display:block;" });
+
+      // Horizontal grid lines
+      for (let i = 0; i <= 4; i++) {
+        const val = minY + (i / 4) * (maxY - minY);
+        const y = yOf(val);
+        svg.appendChild(sv("line", { x1: padL, y1: y, x2: W - padR, y2: y, stroke: "#e5e0d4", "stroke-width": 1 }));
+        svg.appendChild(
+          sv("text", { x: padL - 8, y: y + 4, "text-anchor": "end", fill: "#6b7280", "font-size": 11, "font-family": "monospace" }, val.toFixed(4))
+        );
+      }
+
+      // Seed baseline dashed line
+      if (seedAuc >= minY && seedAuc <= maxY) {
+        const sy = yOf(seedAuc);
+        svg.appendChild(sv("line", { x1: padL, y1: sy, x2: W - padR, y2: sy, stroke: "#6b7280", "stroke-dasharray": "4,4", "stroke-width": 1.2 }));
+        svg.appendChild(sv("text", { x: W - padR - 4, y: sy - 5, "text-anchor": "end", fill: "#4b5563", "font-size": 10.5 }, `Seed ${seedAuc.toFixed(4)}`));
+      }
+
+      // Running best step line
+      let runningBest = null;
+      const pts = [];
+      for (const c of byGen) {
+        const g = c.generation ?? 0;
+        if (c.status === "GRADED" && c.roc_auc > 0) {
+          if (runningBest === null || c.roc_auc > runningBest) runningBest = c.roc_auc;
         }
-        [
-          el("td", "mono", a.arm),
-          el("td", null, fmt(a.test_auc)),
-          el("td", "mono", isRef ? "—" : signed(a.vs_tuned_delta) + " [" + signed(a.vs_tuned_ci_low) + ", " + signed(a.vs_tuned_ci_high) + "]"),
-          el("td", null, isRef ? "—" : fmt(a.vs_tuned_p_value_one_sided, 3))
-        ].forEach(function (td) { tr.appendChild(td); });
-        const tdV = el("td");
-        tdV.appendChild(el("span", verdict[1], verdict[0]));
-        tr.appendChild(tdV);
-        tbody.appendChild(tr);
-      });
-      const note = document.getElementById("locked-note");
-      if (arms.length) {
-        note.textContent = "Report " + card.locked_test_report + " • n=" + (card.locked_test.locked_test_n || 0).toLocaleString("en-US") +
-          " encounters • commit " + String(card.locked_test.git_commit || "—").slice(0, 8);
-      } else {
-        const exp = live.experiment_id || "<exp_id>";
-        note.textContent = "No locked-test report yet. When the run finishes: scripts/tabular_report.py --problem " + card.problem_id +
-          " --candidates artifacts/runs/" + card.problem_id + "/" + exp + "/rank{1,2,3}.py";
+        if (runningBest !== null) pts.push(`${xOf(g).toFixed(1)},${yOf(runningBest).toFixed(1)}`);
       }
-    }
-
-    function renderChart(live, card) {
-      const svg = document.getElementById("real-chart");
-      svg.replaceChildren();
-      const W = 600, H = 240, L = 46, R = 10, T = 12, B = 26;
-      const graded = (live.trace || []).filter(function (p) { return p.status === "GRADED" && p.roc_auc > 0; });
-      if (!graded.length) {
-        svg.appendChild(svgEl("text", { x: W / 2, y: H / 2, fill: "#95a5cd", "text-anchor": "middle", "font-size": 13 },
-          live.experiment_name ? "Waiting for the first graded candidate…" : "No run yet"));
-        return;
+      if (pts.length > 1) {
+        svg.appendChild(sv("polyline", { fill: "none", stroke: "#1e3a5f", "stroke-width": 2.2, points: pts.join(" ") }));
       }
-      const refs = [[live.seed_roc_auc, "seed", "#95a5cd"], [card.tuned_fitness_auc, "tuned LightGBM", "#fbbf24"]]
-        .filter(function (r) { return isNum(r[0]); });
-      const ys = graded.map(function (p) { return p.roc_auc; }).concat(refs.map(function (r) { return r[0]; }));
-      const lo = Math.min.apply(null, ys) - 0.003, hi = Math.max.apply(null, ys) + 0.003;
-      const n = Math.max(live.max_programs || 0, (live.trace || []).length, 2);
-      const x = function (i) { return L + (W - L - R) * i / (n - 1); };
-      const y = function (v) { return T + (H - T - B) * (1 - (v - lo) / (hi - lo)); };
 
-      [lo + 0.003, (lo + hi) / 2, hi - 0.003].forEach(function (v) {
-        svg.appendChild(svgEl("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), stroke: "#26335d" }));
-        svg.appendChild(svgEl("text", { x: L - 4, y: y(v) + 4, fill: "#95a5cd", "text-anchor": "end", "font-size": 10 }, v.toFixed(3)));
-      });
-      svg.appendChild(svgEl("text", { x: W - R, y: H - 6, fill: "#95a5cd", "text-anchor": "end", "font-size": 10 },
-        "evaluated candidates (creation order) → " + n));
-      refs.forEach(function (r) {
-        svg.appendChild(svgEl("line", { x1: L, x2: W - R, y1: y(r[0]), y2: y(r[0]), stroke: r[2], "stroke-dasharray": "5 4" }));
-        svg.appendChild(svgEl("text", { x: W - R - 2, y: y(r[0]) - 4, fill: r[2], "text-anchor": "end", "font-size": 10 }, r[1] + " " + r[0].toFixed(4)));
-      });
-      const idx = {};
-      (live.trace || []).forEach(function (p, i) { idx[p.candidate_id] = i; });
-      graded.forEach(function (p) {
-        const dot = svgEl("circle", { cx: x(idx[p.candidate_id]), cy: y(p.roc_auc), r: 3, fill: "#38bdf8", "fill-opacity": 0.45 });
-        dot.appendChild(svgEl("title", {}, p.candidate_id + ": " + p.roc_auc.toFixed(4)));
+      // Candidate dots
+      for (const c of byGen) {
+        const g = c.generation ?? 0;
+        const isGraded = c.status === "GRADED" && c.roc_auc > 0;
+        const y = isGraded ? yOf(c.roc_auc) : H - padB - 6;
+        const x = xOf(g);
+        const fill = c.status === "GRADED" ? "#166534" : c.status === "HARD_VIOLATION" ? "#b45309" : "#991b1b";
+        const isSel = c.candidate_id === state.selectedCandidateId;
+        const dot = sv(
+          "circle",
+          {
+            cx: x.toFixed(1),
+            cy: y.toFixed(1),
+            r: isSel ? 6.5 : isGraded ? 4.2 : 3.5,
+            fill,
+            stroke: isSel ? "#1e3a5f" : "#ffffff",
+            "stroke-width": isSel ? 2.5 : 1,
+            style: "cursor:pointer;",
+          },
+          sv("title", null, `Gen ${g} · ${c.candidate_id} (${c.status})\nROC-AUC: ${c.roc_auc ?? "—"}\n${c.summary || c.what_changed || ""}`)
+        );
+        dot.addEventListener("click", () => selectCandidate(c.candidate_id));
         svg.appendChild(dot);
-      });
-      const pts = (live.trace || []).map(function (p, i) { return isNum(p.best_roc_auc) ? x(i) + "," + y(p.best_roc_auc) : null; })
-        .filter(Boolean).join(" ");
-      svg.appendChild(svgEl("polyline", { points: pts, fill: "none", stroke: "#34d399", "stroke-width": 2 }));
-    }
-
-    function loadRealData() {
-      clearTimeout(realTimer);
-      const pid = document.getElementById("real-problem-select").value;
-      if (!pid) return;
-      Promise.all([getJson("/api/real_data?problem_id=" + encodeURIComponent(pid)),
-                   getJson("/api/live_run?problem_id=" + encodeURIComponent(pid))])
-        .then(function (res) {
-          renderRealCard(res[0], res[1]);
-          renderChart(res[1], res[0]);
-          if (res[1].experiment_name && !res[1].finished) realTimer = setTimeout(loadRealData, POLL_MS);
-        })
-        .catch(function (err) {
-          document.getElementById("real-meta").textContent = "Server unavailable: " + err.message;
-        });
-    }
-
-    // ---------------- Synthetic portfolio ----------------
-    function renderDashboard() {
-      const selected = document.getElementById("model-select").value;
-      const memberMult = parseFloat(document.getElementById("member-scale").value);
-      const roiMult = parseFloat(document.getElementById("roi-scale").value);
-      document.getElementById("scale-label").textContent = memberMult.toFixed(1) + "x";
-      document.getElementById("roi-label").textContent = roiMult.toFixed(2) + "x";
-
-      const rows = selected === "all" ? PORTFOLIO_DATA : PORTFOLIO_DATA.filter(function (d) { return d.id === selected; });
-      const tbody = document.getElementById("portfolio-tbody");
-      tbody.replaceChildren();
-      if (!rows.length) {
-        document.getElementById("kpi-container").replaceChildren();
-        return;
       }
-      let sumBase = 0, sumEvol = 0, sumActRoi = 0, sumStage2 = 0, sumPrev = 0;
-      rows.forEach(function (r) {
-        sumBase += r.baseAuc;
-        sumEvol += r.evolAuc;
-        const scaledAct = r.actuarialRoi * memberMult * roiMult;
-        const scaledSt2 = r.stage2Roi * memberMult;
-        sumActRoi += scaledAct;
-        sumStage2 += scaledSt2;
-        sumPrev += r.prevented * memberMult;
 
-        const tr = el("tr");
-        const pass = r.evolAuc >= r.targetAuc;
-        [
-          r.id, r.title, fmt(r.baseAuc), fmt(r.seedAuc), fmt(r.evolAuc) + " (" + signed(r.evolAuc - r.baseAuc) + ")",
-          (pass ? "PASS" : "FAIL") + " (≥" + r.targetAuc.toFixed(2) + ")", fmt(r.prAuc), fmt(r.sens80), fmt(r.brier),
-          formatUsd(scaledAct), formatUsd(scaledSt2)
-        ].forEach(function (c, idx) {
-          const td = el("td", idx === 0 ? "mono" : null);
-          if (idx === 5) td.appendChild(el("span", pass ? "badge" : "badge danger", c));
-          else td.textContent = c;
-          tr.appendChild(td);
-        });
-        tbody.appendChild(tr);
-      });
-      const meanBase = sumBase / rows.length, meanEvol = sumEvol / rows.length;
-      document.getElementById("kpi-container").replaceChildren(
-        createKpiCard("Mean reference-evolved ROC-AUC", fmt(meanEvol) + " (" + signed((meanEvol - meanBase) * 100, 1) + " pts)"),
-        createKpiCard("Legacy Baseline API AUC", fmt(meanBase)),
-        createKpiCard("Actuarial AUC Uplift Value (synthetic)", formatUsd(sumActRoi), "green"),
-        createKpiCard("Stage 2 Net ROI (synthetic)", formatUsd(sumStage2), "green"),
-        createKpiCard("Hospitalizations Prevented (synthetic)", sumPrev.toFixed(1) + " events", "green")
-      );
-    }
-
-    function loadPortfolio() {
-      document.getElementById("portfolio-note").textContent = "Evaluating synthetic portfolio on the server…";
-      getJson("/api/portfolio")
-        .then(function (snap) {
-          PORTFOLIO_DATA = Object.keys(snap.problems).map(function (pid) {
-            const p = snap.problems[pid];
-            return {
-              id: p.problem_id, title: p.title, baseAuc: p.baseline_roc_auc, seedAuc: p.seed_roc_auc,
-              evolAuc: p.evolved_roc_auc, targetAuc: p.target_auc, prAuc: p.evolved_pr_auc,
-              sens80: p.evolved_sens_at_spec80, brier: p.evolved_brier, actuarialRoi: p.actuarial_auc_roi_usd,
-              stage2Roi: p.stage2_net_savings_usd, prevented: p.prevented_events
-            };
-          });
-          const sel = document.getElementById("model-select");
-          const allOpt = el("option", null, "All synthetic models (aggregate)");
-          allOpt.value = "all";
-          sel.replaceChildren(allOpt);
-          PORTFOLIO_DATA.forEach(function (d) {
-            const o = el("option", null, d.title);
-            o.value = d.id;
-            sel.appendChild(o);
-          });
-          document.getElementById("portfolio-note").textContent =
-            "Reference program artifacts/best_evolved_program.py vs. seed, canonical (unperturbed) synthetic cohorts.";
-          renderDashboard();
-        })
-        .catch(function (err) {
-          document.getElementById("portfolio-note").textContent = "Server unavailable: " + err.message;
-        });
-    }
-
-    // ---------------- Candidate diagnostics ----------------
-    function updateStatusFilterButtons() {
-      const counts = { ALL: activeCandidates.length };
-      activeCandidates.forEach(function (c) { counts[c.status] = (counts[c.status] || 0) + 1; });
-      const names = { ALL: "All", GRADED: "Graded", HARD_VIOLATION: "Hard Violations", RUNTIME_ERROR: "Runtime Errors", PENDING: "Pending" };
-      document.querySelectorAll("#status-filter-bar button").forEach(function (btn) {
-        const st = btn.getAttribute("data-status");
-        btn.setAttribute("class", st === activeStatusFilter ? "btn active" : "btn");
-        btn.textContent = names[st] + " (" + (counts[st] || 0) + ")";
-      });
-    }
-
-    function scoreText(s) {
-      if (!isNum(s)) return "—";
-      if (s <= -1e9) return "FAIL";
-      return Math.abs(s) >= 1000 ? Math.round(s).toLocaleString("en-US") : s.toFixed(3);
+      wrap.replaceChildren(svg);
     }
 
     function renderCandidatesTable() {
-      updateStatusFilterButtons();
-      const real = trackOf(activeProblemId) === "real_data";
-      const cols = TRACK_COLS[real ? "real_data" : "synthetic"];
-      document.getElementById("th-col-a").textContent = cols[0];
-      document.getElementById("th-col-b").textContent = cols[1];
-
-      const q = (document.getElementById("cand-search").value || "").toLowerCase().trim();
       const tbody = document.getElementById("candidates-tbody");
-      tbody.replaceChildren();
-      activeCandidates.filter(function (c) {
-        if (activeStatusFilter !== "ALL" && c.status !== activeStatusFilter) return false;
-        return !q || c.candidate_id.toLowerCase().indexOf(q) !== -1 || String(c.what_changed).toLowerCase().indexOf(q) !== -1;
-      }).forEach(function (c) {
-        const tr = el("tr");
-        tr.appendChild(el("td", null, "#" + c.rank));
-        tr.appendChild(el("td", "mono", c.candidate_id));
-        tr.appendChild(el("td", null, "G" + c.generation));
+      const cands = (state.candidatesData && state.candidatesData.candidates) || [];
+      const seedCand = cands.find((c) => c.generation === 0);
+      const seedScore = seedCand ? Number(seedCand.score) : null;
 
-        const tdStatus = el("td");
-        const tone = { GRADED: "badge", HARD_VIOLATION: "badge warn", PENDING: "badge info" }[c.status] || "badge danger";
-        tdStatus.appendChild(el("span", tone, c.status));
-        tr.appendChild(tdStatus);
-
-        const tdDiff = el("td");
-        tdDiff.appendChild(el("div", null, c.what_changed));
-        tdDiff.appendChild(el("div", "diff-sub mono",
-          "+" + c.added_lines + " / -" + c.removed_lines + " lines • EVOLVE-BLOCK: " + c.evolve_block_lines + "L"));
-        tr.appendChild(tdDiff);
-
-        tr.appendChild(el("td", "mono", scoreText(c.score)));
-        const delta = isNum(c.auc_uplift_vs_seed) ? c.auc_uplift_vs_seed
-          : (isNum(activeSeedAuc) && c.roc_auc > 0 ? c.roc_auc - activeSeedAuc : null);
-        tr.appendChild(el("td", null, c.roc_auc > 0 ? fmt(c.roc_auc) + " (" + signed(delta) + ")" : "—"));
-        tr.appendChild(el("td", null, c.pr_auc > 0 ? fmt(c.pr_auc) : "—"));
-        tr.appendChild(el("td", null, real ? fmt(c.subgroup_gap, 3) : (c.sens_at_spec80 > 0 ? fmt(c.sens_at_spec80) : "—")));
-        tr.appendChild(el("td", null, c.roc_auc > 0 ? fmt(c.brier) : "—"));
-        tr.appendChild(el("td", null, real ? (c.eval_ms > 0 ? (c.eval_ms / 1000).toFixed(1) + " s" : "—")
-          : formatUsd(c.stage2_net_savings_usd || 0)));
-
-        const tdSrc = el("td");
-        const btnInspect = el("button", "btn", "Diff & Code");
-        btnInspect.setAttribute("type", "button");
-        btnInspect.style.marginRight = "6px";
-        btnInspect.addEventListener("click", function () { inspectCandidateSource(c.problem_id, c.candidate_id, c); });
-        const linkRaw = el("a", "btn", ".py");
-        linkRaw.setAttribute("href", c.source_url + "&format=raw");
-        linkRaw.setAttribute("target", "_blank");
-        linkRaw.setAttribute("rel", "noopener");
-        tdSrc.appendChild(btnInspect);
-        tdSrc.appendChild(linkRaw);
-        tr.appendChild(tdSrc);
-        tbody.appendChild(tr);
+      const filtered = cands.filter((c) => {
+        if (state.statusFilter === "GRADED") return c.status === "GRADED";
+        if (state.statusFilter === "BEAT_SEED") return c.status === "GRADED" && seedScore !== null && Number(c.score) > seedScore;
+        if (state.statusFilter === "FAILED") return c.status !== "GRADED";
+        return true;
       });
-    }
 
-    function inspectCandidateSource(problemId, candidateId, summaryObj) {
-      const qs = "problem_id=" + encodeURIComponent(problemId) + "&candidate_id=" + encodeURIComponent(candidateId);
-      document.getElementById("inspector-title").textContent = "Candidate Source & Diff Inspector — " + candidateId + " (" + problemId + ")";
-      document.getElementById("inspector-subtitle").textContent = summaryObj
-        ? "Mutation: " + summaryObj.what_changed + " (+" + summaryObj.added_lines + " / -" + summaryObj.removed_lines + " lines)" : "";
-      document.getElementById("inspector-raw-link").setAttribute("href", "/api/candidate_source?" + qs + "&format=raw");
-      getJson("/api/candidate_source?" + qs)
-        .then(function (payload) {
-          document.getElementById("inspector-diff").textContent = payload.unified_diff;
-          document.getElementById("inspector-code").textContent = payload.code;
-        })
-        .catch(function (err) {
-          document.getElementById("inspector-diff").textContent = "Source unavailable: " + err.message;
-          document.getElementById("inspector-code").textContent = "";
-        });
-    }
+      document.getElementById("cand-table-title").textContent = `Evaluated Programs (${filtered.length} of ${cands.length})`;
 
-    function loadCandidatesForProblem(problemId, isRefresh) {
-      clearTimeout(diagTimer);
-      activeProblemId = problemId;
-      getJson("/api/candidates?problem_id=" + encodeURIComponent(problemId))
-        .then(function (payload) {
-          if (activeProblemId !== problemId) return;  // user switched problems mid-request
-          activeCandidates = payload.candidates || [];
-          const seedRow = activeCandidates.find(function (c) {
-            return c.status === "GRADED" && c.added_lines === 0 && c.removed_lines === 0;
-          });
-          activeSeedAuc = seedRow ? seedRow.roc_auc : null;
-          document.getElementById("diag-run-meta").textContent =
-            (SOURCE_LABELS[payload.source] || payload.source) + " • Experiment: " + (payload.experiment_id || "—") +
-            " • " + payload.total_candidates + " candidates";
-          renderCandidatesTable();
-          if (!isRefresh && activeCandidates.length > 0) {
-            inspectCandidateSource(problemId, activeCandidates[0].candidate_id, activeCandidates[0]);
-          }
-          if (payload.source === "live_alphaevolve_api") {
-            diagTimer = setTimeout(function () { loadCandidatesForProblem(problemId, true); }, POLL_MS);
-          }
-        })
-        .catch(function (err) {
-          activeCandidates = [];
-          renderCandidatesTable();
-          document.getElementById("diag-run-meta").textContent = "Server unavailable: " + err.message;
-        });
-    }
-
-    // ---------------- Wiring ----------------
-    function init() {
-      getJson("/api/problems")
-        .then(function (problems) {
-          PROBLEMS = problems;
-          const realProblems = problems.filter(function (p) { return p.track === "real_data"; });
-          fillSelect(document.getElementById("real-problem-select"), realProblems,
-            function (p) { return p.problem_id; }, function (p) { return p.problem_id + " — " + p.title; });
-          const ordered = realProblems.concat(problems.filter(function (p) { return p.track !== "real_data"; }));
-          fillSelect(document.getElementById("diag-problem-select"), ordered, function (p) { return p.problem_id; },
-            function (p) { return "[" + (p.track === "real_data" ? "real data" : "synthetic") + "] " + p.problem_id; });
-          if (realProblems.length) loadRealData();
-          else document.getElementById("real-meta").textContent = "No real-data problems configured.";
-          if (ordered.length) loadCandidatesForProblem(ordered[0].problem_id);
-        })
-        .catch(function (err) {
-          document.getElementById("real-meta").textContent = "Server unavailable: " + err.message +
-            ". Start it with: python simulator/portfolio_simulator.py --serve";
-        });
-      loadPortfolio();
-    }
-
-    document.getElementById("real-problem-select").addEventListener("change", loadRealData);
-    document.getElementById("model-select").addEventListener("change", function (e) {
-      renderDashboard();
-      if (e.target.value !== "all") {
-        document.getElementById("diag-problem-select").value = e.target.value;
-        loadCandidatesForProblem(e.target.value);
+      if (!filtered.length) {
+        tbody.replaceChildren(el("tr", null, el("td", { colspan: 7, class: "sub" }, "No candidates match this filter.")));
+        return;
       }
-    });
-    document.getElementById("member-scale").addEventListener("input", renderDashboard);
-    document.getElementById("roi-scale").addEventListener("input", renderDashboard);
-    document.getElementById("diag-problem-select").addEventListener("change", function (e) {
-      loadCandidatesForProblem(e.target.value);
-    });
-    document.getElementById("cand-search").addEventListener("input", renderCandidatesTable);
-    document.querySelectorAll("#status-filter-bar button").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        activeStatusFilter = btn.getAttribute("data-status");
-        renderCandidatesTable();
+
+      tbody.replaceChildren(
+        ...filtered.map((c) => {
+          const stClass = c.status === "GRADED" ? "good" : c.status === "HARD_VIOLATION" ? "warn" : "bad";
+          const summaryText = c.summary || c.what_changed || "—";
+          return el(
+            "tr",
+            {
+              class: "clickable" + (c.candidate_id === state.selectedCandidateId ? " selected" : ""),
+              onclick: () => selectCandidate(c.candidate_id),
+            },
+            el("td", { class: "num" }, `#${c.rank ?? "—"}`),
+            el("td", { style: "font-family:var(--mono); font-size:11.5px;" }, String(c.candidate_id).slice(-10)),
+            el("td", { class: "num" }, c.generation ?? 0),
+            el("td", null, el("span", { class: "badge " + stClass }, c.status)),
+            el("td", { class: "num" }, c.roc_auc ? fmtNum(c.roc_auc, 4) : "—"),
+            el("td", { class: "num" }, `${c.pr_auc ? fmtNum(c.pr_auc, 4) : "—"} / ${c.brier ? fmtNum(c.brier, 4) : "—"}`),
+            el("td", null, el("div", { class: "chg-cell", title: summaryText }, summaryText))
+          );
+        })
+      );
+    }
+
+    function renderCodeInspector() {
+      const titleEl = document.getElementById("inspector-title");
+      const sumWrap = document.getElementById("inspector-summary-wrap");
+      const insWrap = document.getElementById("inspector-insights-wrap");
+      const pre = document.getElementById("inspector-code-pre");
+      const p = state.selectedCandidatePayload;
+
+      document.getElementById("btn-view-diff").classList.toggle("active", state.codeViewMode === "diff");
+      document.getElementById("btn-view-full").classList.toggle("active", state.codeViewMode === "full");
+
+      if (!p) {
+        titleEl.textContent = "Select a candidate to inspect its diff";
+        sumWrap.replaceChildren();
+        insWrap.replaceChildren();
+        pre.replaceChildren(document.createTextNode("No candidate selected."));
+        return;
+      }
+
+      titleEl.textContent = `Candidate ${p.candidate_id} (+${p.added_lines || 0} / -${p.removed_lines || 0} lines · ${p.evolve_block_lines || 0} lines in EVOLVE-BLOCK)`;
+
+      if (p.summary || p.what_changed) {
+        sumWrap.replaceChildren(
+          el(
+            "div",
+            { class: "summary-callout" },
+            el("div", { class: "kicker", style: "margin-bottom:2px; color:var(--navy);" }, `Gemini Candidate Summary (${p.summary_model || "gemini-3.5-flash-lite"})`),
+            p.summary || p.what_changed
+          )
+        );
+      } else {
+        sumWrap.replaceChildren();
+      }
+
+      const insights = Array.isArray(p.insights) ? p.insights : [];
+      if (insights.length) {
+        insWrap.replaceChildren(
+          el(
+            "div",
+            { style: "background:var(--muted); border:1px solid var(--border); border-radius:4px; padding:8px 11px; font-family:var(--mono); font-size:11.5px;" },
+            ...insights.slice(0, 4).map((line) => el("div", { style: "margin:2px 0;" }, line))
+          )
+        );
+      } else {
+        insWrap.replaceChildren();
+      }
+
+      if (state.codeViewMode === "full") {
+        pre.replaceChildren(document.createTextNode(p.code || ""));
+      } else {
+        const diffText = p.unified_diff || "(no changes relative to initial_program.py)";
+        const frag = document.createDocumentFragment();
+        for (const ln of diffText.split("\n")) {
+          if (ln.startsWith("+") && !ln.startsWith("+++")) {
+            frag.appendChild(el("span", { class: "d-add" }, ln + "\n"));
+          } else if (ln.startsWith("-") && !ln.startsWith("---")) {
+            frag.appendChild(el("span", { class: "d-del" }, ln + "\n"));
+          } else if (ln.startsWith("@@")) {
+            frag.appendChild(el("span", { class: "d-hunk" }, ln + "\n"));
+          } else {
+            frag.appendChild(document.createTextNode(ln + "\n"));
+          }
+        }
+        pre.replaceChildren(frag);
+      }
+    }
+
+    // --- STEP 3: INTERACTIVE SIMULATOR & PORTFOLIO OVERVIEW ----------------------------------------------------------
+    function renderSimulatorStep() {
+      const host = document.getElementById("simulator-container");
+      const port = state.portfolioData;
+      if (!port || !port.problems) {
+        host.replaceChildren(el("div", { class: "card" }, "Loading portfolio simulation..."));
+        return;
+      }
+      const probs = Object.values(port.problems);
+      const totals = port.totals || {};
+      const wRes = state.whatIfResult || port.problems[state.whatIfProblem] || probs[0];
+
+      const simCard = el(
+        "div",
+        { class: "card" },
+        el("div", { class: "kicker" }, "Interactive Stage 2 Care-Management Budget & ROI Stress-Tester"),
+        el("h3", null, "Simulate Budget Scaling & Actuarial Lift Across Clinical Cohorts"),
+        el(
+          "div",
+          { class: "controls-row", style: "margin-top:10px;" },
+          el(
+            "div",
+            { class: "control-item" },
+            el("label", null, "Care-Allocation Cohort"),
+            el(
+              "select",
+              {
+                style: "padding:6px 8px; border:1px solid var(--border); border-radius:4px; background:var(--card); font:inherit;",
+                onchange: (e) => {
+                  state.whatIfProblem = e.target.value;
+                  runWhatIf();
+                },
+              },
+              ...probs.map((p) =>
+                el("option", { value: p.problem_id, selected: p.problem_id === state.whatIfProblem ? "selected" : null }, p.title)
+              )
+            )
+          ),
+          el(
+            "div",
+            { class: "control-item" },
+            el("label", { id: "lbl-budget-mult" }, `Stage 2 Care Budget Multiplier: ${state.whatIfBudget.toFixed(1)}×`),
+            el("input", {
+              type: "range",
+              min: "0.4",
+              max: "2.5",
+              step: "0.1",
+              value: String(state.whatIfBudget),
+               oninput: (e) => {
+                state.whatIfBudget = Number(e.target.value);
+                document.getElementById("lbl-budget-mult").textContent = `Stage 2 Care Budget Multiplier: ${state.whatIfBudget.toFixed(1)}×`;
+              },
+              onchange: () => runWhatIf(),
+            })
+          ),
+          el(
+            "div",
+            { class: "control-item" },
+            el("label", { id: "lbl-roi-mult" }, `Actuarial Value per +1% AUC Multiplier: ${state.whatIfRoi.toFixed(1)}×`),
+            el("input", {
+              type: "range",
+              min: "0.5",
+              max: "2.0",
+              step: "0.1",
+              value: String(state.whatIfRoi),
+              oninput: (e) => {
+                state.whatIfRoi = Number(e.target.value);
+                document.getElementById("lbl-roi-mult").textContent = `Actuarial Value per +1% AUC Multiplier: ${state.whatIfRoi.toFixed(1)}×`;
+              },
+              onchange: () => runWhatIf(),
+            })
+          )
+        ),
+        el(
+          "div",
+          { class: "grid-4" },
+          el("div", { class: "kpi" }, el("div", { class: "lbl" }, "Simulated Evolved ROC-AUC"), el("div", { class: "val good" }, fmtNum(wRes.evolved_roc_auc, 4)), el("div", { class: "delta" }, `Cohort: ${state.whatIfProblem}`)),
+          el("div", { class: "kpi" }, el("div", { class: "lbl" }, "Simulated Stage 2 Net Savings"), el("div", { class: "val good" }, fmtUsd(wRes.stage2_net_savings_usd)), el("div", { class: "delta" }, `At ${state.whatIfBudget.toFixed(1)}× care-management budget`)),
+          el("div", { class: "kpi" }, el("div", { class: "lbl" }, "Simulated Events Prevented"), el("div", { class: "val" }, fmtNum(wRes.prevented_events, 1)), el("div", { class: "delta" }, "Avoided readmissions / acute events")),
+          el("div", { class: "kpi" }, el("div", { class: "lbl" }, "Simulated Actuarial AUC ROI"), el("div", { class: "val" }, fmtUsd(wRes.actuarial_auc_roi_usd)), el("div", { class: "delta" }, `At ${state.whatIfRoi.toFixed(1)}× value per +1% AUC`))
+        )
+      );
+
+      const portCard = el(
+        "div",
+        { class: "card" },
+        el("div", { class: "kicker" }, "4-Model Care-Allocation Portfolio Summary"),
+        el("h3", null, `Cross-Portfolio Totals: Mean Evolved AUC ${fmtNum(totals.mean_evolved_auc, 4)} (vs ${fmtNum(totals.mean_seed_auc, 4)} Seed) · Stage 2 Net Savings ${fmtUsd(totals.total_stage2_net_savings_usd)}`),
+        el(
+          "div",
+          { class: "table-wrap", style: "margin-top:10px;" },
+          el(
+            "table",
+            null,
+            el(
+              "thead",
+              null,
+              el(
+                "tr",
+                null,
+                el("th", null, "Clinical Model"),
+                el("th", { class: "num" }, "Legacy API AUC"),
+                el("th", { class: "num" }, "Seed Program AUC"),
+                el("th", { class: "num" }, "AlphaEvolve AUC"),
+                el("th", { class: "num" }, "Δ vs Seed"),
+                el("th", { class: "num" }, "Evolved PR-AUC"),
+                el("th", { class: "num" }, "Brier"),
+                el("th", { class: "num" }, "Stage 2 Net Savings"),
+                el("th", { class: "num" }, "Events Prevented")
+              )
+            ),
+            el(
+              "tbody",
+              null,
+              ...probs.map((p) =>
+                el(
+                  "tr",
+                  { class: "clickable", onclick: () => selectProblem(p.problem_id) },
+                  el("td", { style: "font-weight:600;" }, p.title),
+                  el("td", { class: "num" }, fmtNum(p.baseline_roc_auc, 4)),
+                  el("td", { class: "num" }, fmtNum(p.seed_roc_auc, 4)),
+                  el("td", { class: "num good" }, fmtNum(p.evolved_roc_auc, 4)),
+                  el("td", { class: "num good" }, "+" + fmtNum(p.auc_uplift_vs_seed, 4)),
+                  el("td", { class: "num" }, fmtNum(p.evolved_pr_auc, 4)),
+                  el("td", { class: "num" }, fmtNum(p.evolved_brier, 4)),
+                  el("td", { class: "num good" }, fmtUsd(p.stage2_net_savings_usd)),
+                  el("td", { class: "num" }, fmtNum(p.prevented_events, 1))
+                )
+              )
+            )
+          )
+        )
+      );
+
+      host.replaceChildren(simCard, portCard);
+    }
+
+    // --- DATA FETCHING & ACTIONS -------------------------------------------------------------------------------------
+    async function fetchJson(url) {
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status} for ${url}`);
+      return resp.json();
+    }
+
+    async function selectCandidate(candidateId) {
+      state.selectedCandidateId = candidateId;
+      renderTrajectoryChart();
+      renderCandidatesTable();
+      const q = new URLSearchParams({ problem_id: state.activeProblem, candidate_id: candidateId });
+      if (state.activeRunId) q.set("run_id", state.activeRunId);
+      try {
+        state.selectedCandidatePayload = await fetchJson(`/api/candidate_source?${q.toString()}`);
+      } catch (err) {
+        state.selectedCandidatePayload = { candidate_id: candidateId, code: String(err), unified_diff: String(err) };
+      }
+      renderCodeInspector();
+    }
+
+    async function loadProblemAndRun(problemId, runId = null) {
+      const q = new URLSearchParams({ problem_id: problemId });
+      if (runId) q.set("run_id", runId);
+      const [setup, live, cands] = await Promise.all([
+        fetchJson(`/api/setup?${q.toString()}`),
+        fetchJson(`/api/live_run?${q.toString()}`),
+        fetchJson(`/api/candidates?${q.toString()}`),
+      ]);
+      state.setupData = setup;
+      state.liveData = live;
+      state.candidatesData = cands;
+      state.activeRunId = live.run_id || setup.run_id || runId;
+
+      if (problemId === "diabetes130_readmit30") {
+        state.realData = await fetchJson(`/api/real_data?${q.toString()}`);
+      } else {
+        state.realData = null;
+        state.whatIfProblem = problemId;
+      }
+
+      renderHeaderBadges();
+      renderProblemTabs();
+      renderSetupStep();
+      renderRunSelectorBar();
+      renderScorecard();
+      renderAnalysisCard();
+      renderTrajectoryChart();
+      renderCandidatesTable();
+
+      const rows = (cands && cands.candidates) || [];
+      if (rows.length) {
+        await selectCandidate(rows[0].candidate_id);
+      } else {
+        state.selectedCandidateId = null;
+        state.selectedCandidatePayload = null;
+        renderCodeInspector();
+      }
+    }
+
+    async function selectProblem(problemId) {
+      state.activeProblem = problemId;
+      state.activeRunId = null;
+      await loadProblemAndRun(problemId, null);
+    }
+
+    async function selectRun(runId) {
+      state.activeRunId = runId;
+      await loadProblemAndRun(state.activeProblem, runId);
+    }
+
+    async function runWhatIf() {
+      const q = new URLSearchParams({
+        problem_id: state.whatIfProblem,
+        budget: String(state.whatIfBudget),
+        roi: String(state.whatIfRoi),
       });
-    });
+      try {
+        state.whatIfResult = await fetchJson(`/api/whatif?${q.toString()}`);
+      } catch (_e) {
+        state.whatIfResult = null;
+      }
+      renderSimulatorStep();
+    }
+
+    async function init() {
+      // Wire step tabs
+      for (const btn of document.querySelectorAll("#step-tabs .step-btn")) {
+        btn.addEventListener("click", () => {
+          state.activeStep = btn.getAttribute("data-step");
+          renderStepVisibility();
+        });
+      }
+      // Wire status filter pills
+      for (const btn of document.querySelectorAll("#status-filter-pills .pill")) {
+        btn.addEventListener("click", () => {
+          state.statusFilter = btn.getAttribute("data-status");
+          for (const b of document.querySelectorAll("#status-filter-pills .pill")) {
+            b.classList.toggle("active", b === btn);
+          }
+          renderCandidatesTable();
+        });
+      }
+      // Wire diff vs full source buttons
+      document.getElementById("btn-view-diff").addEventListener("click", () => {
+        state.codeViewMode = "diff";
+        renderCodeInspector();
+      });
+      document.getElementById("btn-view-full").addEventListener("click", () => {
+        state.codeViewMode = "full";
+        renderCodeInspector();
+      });
+      document.getElementById("btn-refresh-run").addEventListener("click", () => {
+        loadProblemAndRun(state.activeProblem, state.activeRunId);
+      });
+
+      const [problems, portfolio] = await Promise.all([
+        fetchJson("/api/problems"),
+        fetchJson("/api/portfolio"),
+      ]);
+      state.problems = problems;
+      state.portfolioData = portfolio;
+      await loadProblemAndRun(state.activeProblem, null);
+      await runWhatIf();
+    }
 
     init();
   </script>

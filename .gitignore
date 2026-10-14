@@ -1,7 +1,9 @@
 .env
 __pycache__/
 .pytest_cache/
-artifacts/runs/
+# Promoted AlphaEvolve runs (with Gemini 3.8 analysis.json and candidate summaries) are committed so the UI works from a fresh clone; logs and archives are not.
+artifacts/runs/_logs/
+artifacts/runs/_archive/
 .venv/
 .evolve/
 

@@ -508,6 +508,9 @@ def main() -> None:
     }
     (out_dir / "report.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     logging.info("Wrote run report and candidate catalog to %s", out_dir)
+    from scripts import run_narrator
+
+    run_narrator.narrate(out_dir, args.problem, seed_code)
 
 
 if __name__ == "__main__":

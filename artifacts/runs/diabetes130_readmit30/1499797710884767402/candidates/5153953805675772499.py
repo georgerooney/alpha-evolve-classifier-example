@@ -1,0 +1,425 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Seed program for the Diabetes 130-US Hospitals 30-day readmission problem (real data).
+
+Strategy only: an untuned single LightGBM on the raw columns. Encoding mechanics live in `clinical_toolkit`.
+"""
+
+from __future__ import annotations
+
+from typing import Dict
+
+import lightgbm as lgb
+import numpy as np
+
+from clinical_models import TabularTask
+from clinical_toolkit import TabularEncoder, icd9_group  # noqa: F401  (icd9_group available for feature ideas)
+
+
+# =====================================================================
+# EVOLVE-BLOCK-START
+# Strategy only. Pre-imported in the sandbox: numpy, scipy, sklearn, lightgbm, xgboost. No file/network access.
+
+
+def fit_and_score_risk(
+    task: TabularTask,
+    train: Dict[str, np.ndarray],
+    y_train: np.ndarray,
+    eval_cols: Dict[str, np.ndarray],
+) -> np.ndarray:
+    """Fit on `train`/`y_train` and return readmission probabilities using Clinical Holographic Topics & Tri-GBDTs."""
+    from sklearn.ensemble import HistGradientBoostingClassifier
+    from sklearn.model_selection import StratifiedKFold
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    from sklearn.decomposition import TruncatedSVD
+    import xgboost as xgb
+
+    non_med_cols = {
+        'race', 'gender', 'age', 'weight', 'payer_code', 'medical_specialty',
+        'diag_1', 'diag_2', 'diag_3', 'max_glu_serum', 'A1Cresult', 'change', 'diabetesMed',
+        'admission_type_id', 'discharge_disposition_id', 'admission_source_id'
+    }
+    med_cols = [col for col in task.categorical_columns if col not in non_med_cols]
+
+    age_midpoints = {
+        '[0-10)': 5.0, '[10-20)': 15.0, '[20-30)': 25.0, '[30-40)': 35.0,
+        '[40-50)': 45.0, '[50-60)': 55.0, '[60-70)': 65.0, '[70-80)': 75.0,
+        '[80-90)': 85.0, '[90-100)': 95.0,
+    }
+
+    def safe_str(val):
+        if val is None or val == '?' or val == '':
+            return '__missing__'
+        return str(val)
+
+    def clean_icd(code):
+        if code is None or code == '?' or code == '':
+            return 'missing'
+        return str(code).strip().split('.')[0]
+
+    # 1. Feature Engineering on both sets
+    for d in [train, eval_cols]:
+        n_rows = len(d['gender'])
+        d['age_num'] = np.array([age_midpoints.get(str(x), 65.0) for x in d['age']], dtype=float)
+
+        # Utilization & clinical intensity metrics
+        total_v = d['number_outpatient'] + d['number_emergency'] + d['number_inpatient']
+        d['total_visits'] = total_v
+        d['inpatient_ratio'] = d['number_inpatient'] / (total_v + 1.0)
+        d['emergency_ratio'] = d['number_emergency'] / (total_v + 1.0)
+        d['has_prior_inpatient'] = (d['number_inpatient'] > 0).astype(float)
+        d['frequent_inpatient'] = (d['number_inpatient'] >= 2).astype(float)
+        stay = d['time_in_hospital'] + 1.0
+        d['med_per_day'] = d['num_medications'] / stay
+        d['lab_per_day'] = d['num_lab_procedures'] / stay
+        d['proc_per_day'] = d['num_procedures'] / stay
+        d['diag_per_day'] = d['number_diagnoses'] / stay
+        d['service_intensity'] = (d['num_lab_procedures'] + 4.0 * d['num_procedures'] + 2.0 * d['num_medications']) / stay
+
+        # Polypharmacy & Medication instability
+        active = np.zeros(n_rows, dtype=float)
+        changes = np.zeros(n_rows, dtype=float)
+        for col in med_cols:
+            if col in d:
+                val = d[col]
+                active += (val != 'No').astype(float)
+                changes += np.isin(val, ['Up', 'Down']).astype(float)
+        d['active_meds'] = active
+        d['num_med_changes'] = changes
+
+        insulin = d.get('insulin', np.array(['No'] * n_rows))
+        d['has_insulin'] = (insulin != 'No').astype(float)
+        d['insulin_up'] = (insulin == 'Up').astype(float)
+        d['insulin_down'] = (insulin == 'Down').astype(float)
+        d['change_flag'] = (d['change'] == 'Ch').astype(float)
+        d['diabetes_med_flag'] = (d['diabetesMed'] == 'Yes').astype(float)
+
+        # Medication combinations & dosage imbalances
+        any_up = np.zeros(n_rows, dtype=float)
+        any_down = np.zeros(n_rows, dtype=float)
+        sulf_active = np.zeros(n_rows, dtype=float)
+        metformin_val = d.get('metformin', np.array(['No'] * n_rows))
+        metformin_active = (metformin_val != 'No').astype(float)
+
+        for col in med_cols:
+            if col in d:
+                val = d[col]
+                any_up += (val == 'Up').astype(float)
+                any_down += (val == 'Down').astype(float)
+                if col in ['glimepiride', 'glipizide', 'glyburide']:
+                    sulf_active += (val != 'No').astype(float)
+
+        d['any_change_up'] = (any_up > 0).astype(float)
+        d['any_change_down'] = (any_down > 0).astype(float)
+        d['dosage_imbalance'] = (d['any_change_up'] * d['any_change_down']).astype(float)
+        d['metformin_insulin_combo'] = metformin_active * d['has_insulin']
+        d['sulf_insulin_combo'] = (sulf_active > 0).astype(float) * d['has_insulin']
+
+        # Discharge risk dispositions
+        disp = np.array([safe_str(x) for x in d['discharge_disposition_id']])
+        d['disch_is_home'] = (disp == '1').astype(float)
+        d['disch_is_snf_hh'] = np.isin(disp, ['3', '6', '22', '28']).astype(float)
+        d['disch_is_ama'] = np.isin(disp, ['7', '23', '24']).astype(float)
+
+        # Diagnoses: groups, 3-digit categories & clinical comorbidity profile
+        for col in ['diag_1', 'diag_2', 'diag_3']:
+            d[f'{col}_grp'] = np.array([icd9_group(x) for x in d[col]], dtype=object)
+            d[f'{col}_3d'] = np.array([clean_icd(x) for x in d[col]], dtype=object)
+
+        c1, c2, c3 = d['diag_1_3d'], d['diag_2_3d'], d['diag_3_3d']
+        has_chf = (c1 == '428') | (c2 == '428') | (c3 == '428')
+        has_ckd = np.isin(c1, ['585', '586']) | np.isin(c2, ['585', '586']) | np.isin(c3, ['585', '586'])
+        has_cad = np.isin(c1, ['410', '411', '412', '413', '414']) | np.isin(c2, ['410', '411', '412', '413', '414']) | np.isin(c3, ['410', '411', '412', '413', '414'])
+        has_htn = np.isin(c1, ['401', '402', '403', '404', '405']) | np.isin(c2, ['401', '402', '403', '404', '405']) | np.isin(c3, ['401', '402', '403', '404', '405'])
+        has_copd = np.isin(c1, ['490', '491', '492', '493', '494', '495', '496']) | np.isin(c2, ['490', '491', '492', '493', '494', '495', '496']) | np.isin(c3, ['490', '491', '492', '493', '494', '495', '496'])
+        has_diab_comp = np.zeros(n_rows, dtype=bool)
+        for col in ['diag_1', 'diag_2', 'diag_3']:
+            has_diab_comp |= np.array([str(x).startswith('250') and str(x) not in ['250', '250.0', '250.00', '250.02'] for x in d[col]])
+
+        d['has_chf'] = has_chf.astype(float)
+        d['has_ckd'] = has_ckd.astype(float)
+        d['has_cad'] = has_cad.astype(float)
+        d['has_htn'] = has_htn.astype(float)
+        d['has_copd'] = has_copd.astype(float)
+        d['has_diab_comp'] = has_diab_comp.astype(float)
+        comorb = d['has_chf'] + d['has_ckd'] + d['has_cad'] + d['has_htn'] + d['has_copd'] + d['has_diab_comp']
+        d['comorbidity_count'] = comorb
+        d['frailty_index'] = comorb * (d['age_num'] / 50.0) * (d['number_inpatient'] + 1.0)
+
+        # High-intensity usage features
+        d['utilization_density'] = total_v / (d['age_num'] + 1.0)
+        d['emergency_density'] = d['number_emergency'] / stay
+        d['inpatient_density'] = d['number_inpatient'] / stay
+        d['high_utilizer'] = ((d['number_inpatient'] >= 1) & (d['number_emergency'] >= 1)).astype(float)
+        d['lab_med_interaction'] = d['num_lab_procedures'] * d['num_medications']
+        d['proc_stay_interaction'] = d['num_procedures'] * d['time_in_hospital']
+
+    # 2. Bayesian Smoothed Target Encoding (Out-of-Fold within train)
+    def compute_smoothed_map(cats, targets, smooth=25.0, prior=0.114):
+        counts, sums = {}, {}
+        for c, y in zip(cats, targets):
+            c_str = safe_str(c)
+            counts[c_str] = counts.get(c_str, 0) + 1
+            sums[c_str] = sums.get(c_str, 0.0) + y
+        return {c: (sums[c] + smooth * prior) / (counts[c] + smooth) for c in counts}
+
+    prior_glob = float(np.mean(y_train))
+    n_tr = len(y_train)
+    skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+
+    tr_diag_max = np.zeros(n_tr, dtype=float)
+    tr_diag_mean = np.zeros(n_tr, dtype=float)
+    tr_diag_sum = np.zeros(n_tr, dtype=float)
+    tr_disp = np.zeros(n_tr, dtype=float)
+    tr_spec = np.zeros(n_tr, dtype=float)
+    tr_src = np.zeros(n_tr, dtype=float)
+    tr_payer = np.zeros(n_tr, dtype=float)
+    tr_adm_type = np.zeros(n_tr, dtype=float)
+
+    for tr_idx, val_idx in skf.split(train['gender'], y_train):
+        # Pool all 3 diagnoses into one unified clinical registry
+        pooled_diag = np.concatenate([train['diag_1_3d'][tr_idx], train['diag_2_3d'][tr_idx], train['diag_3_3d'][tr_idx]])
+        pooled_y = np.concatenate([y_train[tr_idx], y_train[tr_idx], y_train[tr_idx]])
+        d_map = compute_smoothed_map(pooled_diag, pooled_y, smooth=25.0, prior=prior_glob)
+
+        d1 = np.array([d_map.get(safe_str(c), prior_glob) for c in train['diag_1_3d'][val_idx]])
+        d2 = np.array([d_map.get(safe_str(c), prior_glob) for c in train['diag_2_3d'][val_idx]])
+        d3 = np.array([d_map.get(safe_str(c), prior_glob) for c in train['diag_3_3d'][val_idx]])
+        tr_diag_max[val_idx] = np.maximum(np.maximum(d1, d2), d3)
+        tr_diag_mean[val_idx] = (d1 + d2 + d3) / 3.0
+        tr_diag_sum[val_idx] = d1 + d2 + d3
+
+        disp_map = compute_smoothed_map(train['discharge_disposition_id'][tr_idx], y_train[tr_idx], smooth=20.0, prior=prior_glob)
+        tr_disp[val_idx] = np.array([disp_map.get(safe_str(c), prior_glob) for c in train['discharge_disposition_id'][val_idx]])
+
+        spec_map = compute_smoothed_map(train['medical_specialty'][tr_idx], y_train[tr_idx], smooth=20.0, prior=prior_glob)
+        tr_spec[val_idx] = np.array([spec_map.get(safe_str(c), prior_glob) for c in train['medical_specialty'][val_idx]])
+
+        src_map = compute_smoothed_map(train['admission_source_id'][tr_idx], y_train[tr_idx], smooth=20.0, prior=prior_glob)
+        tr_src[val_idx] = np.array([src_map.get(safe_str(c), prior_glob) for c in train['admission_source_id'][val_idx]])
+
+        payer_map = compute_smoothed_map(train['payer_code'][tr_idx], y_train[tr_idx], smooth=20.0, prior=prior_glob)
+        tr_payer[val_idx] = np.array([payer_map.get(safe_str(c), prior_glob) for c in train['payer_code'][val_idx]])
+
+        type_map = compute_smoothed_map(train['admission_type_id'][tr_idx], y_train[tr_idx], smooth=20.0, prior=prior_glob)
+        tr_adm_type[val_idx] = np.array([type_map.get(safe_str(c), prior_glob) for c in train['admission_type_id'][val_idx]])
+
+    train['te_diag_max'] = tr_diag_max
+    train['te_diag_mean'] = tr_diag_mean
+    train['te_diag_sum'] = tr_diag_sum
+    train['te_discharge'] = tr_disp
+    train['te_specialty'] = tr_spec
+    train['te_adm_source'] = tr_src
+    train['te_payer'] = tr_payer
+    train['te_admission_type'] = tr_adm_type
+
+    # Full train-to-eval target mappings
+    pooled_diag_all = np.concatenate([train['diag_1_3d'], train['diag_2_3d'], train['diag_3_3d']])
+    pooled_y_all = np.concatenate([y_train, y_train, y_train])
+    d_map_all = compute_smoothed_map(pooled_diag_all, pooled_y_all, smooth=25.0, prior=prior_glob)
+    ed1 = np.array([d_map_all.get(safe_str(c), prior_glob) for c in eval_cols['diag_1_3d']])
+    ed2 = np.array([d_map_all.get(safe_str(c), prior_glob) for c in eval_cols['diag_2_3d']])
+    ed3 = np.array([d_map_all.get(safe_str(c), prior_glob) for c in eval_cols['diag_3_3d']])
+    eval_cols['te_diag_max'] = np.maximum(np.maximum(ed1, ed2), ed3)
+    eval_cols['te_diag_mean'] = (ed1 + ed2 + ed3) / 3.0
+    eval_cols['te_diag_sum'] = ed1 + ed2 + ed3
+
+    disp_map_all = compute_smoothed_map(train['discharge_disposition_id'], y_train, smooth=20.0, prior=prior_glob)
+    eval_cols['te_discharge'] = np.array([disp_map_all.get(safe_str(c), prior_glob) for c in eval_cols['discharge_disposition_id']])
+
+    spec_map_all = compute_smoothed_map(train['medical_specialty'], y_train, smooth=20.0, prior=prior_glob)
+    eval_cols['te_specialty'] = np.array([spec_map_all.get(safe_str(c), prior_glob) for c in eval_cols['medical_specialty']])
+
+    src_map_all = compute_smoothed_map(train['admission_source_id'], y_train, smooth=20.0, prior=prior_glob)
+    eval_cols['te_adm_source'] = np.array([src_map_all.get(safe_str(c), prior_glob) for c in eval_cols['admission_source_id']])
+
+    payer_map_all = compute_smoothed_map(train['payer_code'], y_train, smooth=20.0, prior=prior_glob)
+    eval_cols['te_payer'] = np.array([payer_map_all.get(safe_str(c), prior_glob) for c in eval_cols['payer_code']])
+
+    type_map_all = compute_smoothed_map(train['admission_type_id'], y_train, smooth=20.0, prior=prior_glob)
+    eval_cols['te_admission_type'] = np.array([type_map_all.get(safe_str(c), prior_glob) for c in eval_cols['admission_type_id']])
+
+    # Multi-scale Medical Risk Interaction Mapping
+    for d in [train, eval_cols]:
+        d['te_discharge_age'] = d['te_discharge'] * d['age_num']
+        d['te_discharge_frailty'] = d['te_discharge'] * d['frailty_index']
+        d['te_discharge_inp_ratio'] = d['te_discharge'] * d['inpatient_ratio']
+        d['te_discharge_total_visits'] = d['te_discharge'] * d['total_visits']
+        d['te_diag_max_frailty'] = d['te_diag_max'] * d['frailty_index']
+
+    # 3. Clinical Holographic Topic SVD
+    def build_narrative_corpus(d):
+        n = len(d['gender'])
+        med_pairs = [(m, d[m]) for m in med_cols if m in d]
+        c = []
+        for i in range(n):
+            w = [
+                f"d1_{d['diag_1_3d'][i]}", f"d2_{d['diag_2_3d'][i]}", f"d3_{d['diag_3_3d'][i]}",
+                f"g1_{d['diag_1_grp'][i]}", f"g2_{d['diag_2_grp'][i]}", f"g3_{d['diag_3_grp'][i]}",
+                f"disp_{safe_str(d['discharge_disposition_id'][i])}",
+                f"src_{safe_str(d['admission_source_id'][i])}",
+                f"spec_{safe_str(d['medical_specialty'][i])}",
+                f"age_{safe_str(d['age'][i])}",
+            ]
+            if d['number_inpatient'][i] > 0:
+                w.append("prior_inp")
+            if d['number_inpatient'][i] >= 2:
+                w.append("freq_inp")
+            if d['number_emergency'][i] > 0:
+                w.append("prior_er")
+            for m_name, m_vals in med_pairs:
+                val = m_vals[i]
+                if val is not None and val != 'No':
+                    w.append(f"{m_name}_{val}")
+            c.append(" ".join(w))
+        return c
+
+    tfidf = TfidfVectorizer(max_features=500, min_df=2, token_pattern=r'(?u)\b\S+\b')
+    tr_tfidf = tfidf.fit_transform(build_narrative_corpus(train))
+    ev_tfidf = tfidf.transform(build_narrative_corpus(eval_cols))
+
+    svd = TruncatedSVD(n_components=12, random_state=42)
+    tr_svd = svd.fit_transform(tr_tfidf)
+    ev_svd = svd.transform(ev_tfidf)
+
+    topic_names = [f'topic_{k}' for k in range(12)]
+    for k in range(12):
+        train[f'topic_{k}'] = tr_svd[:, k].astype(float)
+        eval_cols[f'topic_{k}'] = ev_svd[:, k].astype(float)
+
+    extra_num = [
+        'age_num', 'total_visits', 'inpatient_ratio', 'emergency_ratio',
+        'has_prior_inpatient', 'frequent_inpatient', 'med_per_day', 'lab_per_day',
+        'proc_per_day', 'diag_per_day', 'service_intensity',
+        'active_meds', 'num_med_changes', 'has_insulin', 'insulin_up', 'insulin_down',
+        'change_flag', 'diabetes_med_flag',
+        'disch_is_home', 'disch_is_snf_hh', 'disch_is_ama',
+        'has_chf', 'has_ckd', 'has_cad', 'has_htn', 'has_copd', 'has_diab_comp',
+        'comorbidity_count', 'frailty_index',
+        'te_diag_max', 'te_diag_mean', 'te_diag_sum',
+        'te_discharge', 'te_specialty', 'te_adm_source',
+        'te_payer', 'te_admission_type',
+        'any_change_up', 'any_change_down', 'dosage_imbalance',
+        'metformin_insulin_combo', 'sulf_insulin_combo',
+        'utilization_density', 'emergency_density', 'inpatient_density',
+        'high_utilizer', 'lab_med_interaction', 'proc_stay_interaction',
+        'te_discharge_age', 'te_discharge_frailty', 'te_discharge_inp_ratio', 'te_discharge_total_visits',
+        'te_diag_max_frailty'
+    ] + topic_names
+
+    extra_cat = ['diag_1_grp', 'diag_2_grp', 'diag_3_grp', 'diag_1_3d', 'diag_2_3d', 'diag_3_3d']
+
+    # 4. Encoding
+    encoder = TabularEncoder(min_count=10)
+    x_train = encoder.fit_transform(task, train, extra_numeric=extra_num, extra_categorical=extra_cat)
+    x_eval = encoder.transform(eval_cols)
+
+    # 5. Tri-Engine K-Fold Bagging with Nelder-Mead Blending Optimization
+    import lightgbm as lgb
+    from scipy.optimize import minimize
+    from sklearn.metrics import roc_auc_score
+
+    n_splits = 5
+    kf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
+
+    oof_lgb = np.zeros(n_tr)
+    oof_hgb = np.zeros(n_tr)
+    oof_xgb = np.zeros(n_tr)
+
+    test_lgb = np.zeros(len(x_eval))
+    test_hgb = np.zeros(len(x_eval))
+    test_xgb = np.zeros(len(x_eval))
+
+    for train_idx, val_idx in kf.split(x_train, y_train):
+        X_tr, y_tr = x_train[train_idx], y_train[train_idx]
+        X_va, y_va = x_train[val_idx], y_train[val_idx]
+
+        # LightGBM
+        model_lgb = lgb.LGBMClassifier(
+            n_estimators=260,
+            learning_rate=0.035,
+            num_leaves=31,
+            min_child_samples=65,
+            subsample=0.8,
+            subsample_freq=1,
+            colsample_bytree=0.7,
+            reg_alpha=0.6,
+            reg_lambda=3.5,
+            random_state=42,
+            n_jobs=1,
+            verbose=-1,
+        )
+        model_lgb.fit(X_tr, y_tr, categorical_feature=encoder.categorical_indices)
+        oof_lgb[val_idx] = model_lgb.predict_proba(X_va)[:, 1]
+        test_lgb += model_lgb.predict_proba(x_eval)[:, 1] / n_splits
+
+        # HistGradientBoosting
+        model_hgb = HistGradientBoostingClassifier(
+            max_iter=200,
+            learning_rate=0.035,
+            max_leaf_nodes=31,
+            min_samples_leaf=65,
+            l2_regularization=3.5,
+            categorical_features=encoder.categorical_indices,
+            random_state=42,
+        )
+        model_hgb.fit(X_tr, y_tr)
+        oof_hgb[val_idx] = model_hgb.predict_proba(X_va)[:, 1]
+        test_hgb += model_hgb.predict_proba(x_eval)[:, 1] / n_splits
+
+        # XGBoost
+        model_xgb = xgb.XGBClassifier(
+            n_estimators=220,
+            learning_rate=0.035,
+            max_depth=5,
+            min_child_weight=30,
+            subsample=0.8,
+            colsample_bytree=0.7,
+            reg_alpha=0.6,
+            reg_lambda=3.5,
+            random_state=42,
+            n_jobs=1,
+            tree_method='hist',
+            eval_metric='logloss',
+        )
+        model_xgb.fit(X_tr, y_tr)
+        oof_xgb[val_idx] = model_xgb.predict_proba(X_va)[:, 1]
+        test_xgb += model_xgb.predict_proba(x_eval)[:, 1] / n_splits
+
+    # Nelder-Mead Optimization on the 3-Model OOF Ensemble for maximum ROC-AUC
+    def objective(w):
+        w_norm = np.clip(w, 0, None)
+        s = np.sum(w_norm)
+        if s == 0:
+            return 0.0
+        w_norm = w_norm / s
+        pred_oof = w_norm[0] * oof_lgb + w_norm[1] * oof_xgb + w_norm[2] * oof_hgb
+        return -roc_auc_score(y_train, pred_oof)
+
+    init_weights = [0.45, 0.30, 0.25]
+    res = minimize(objective, init_weights, method='Nelder-Mead', options={'maxiter': 200})
+    best_w = np.clip(res.x, 0, None)
+    sum_w = np.sum(best_w)
+    if sum_w > 0:
+        best_w = best_w / sum_w
+    else:
+        best_w = np.array([0.45, 0.30, 0.25])
+
+    pred = best_w[0] * test_lgb + best_w[1] * test_xgb + best_w[2] * test_hgb
+    return np.clip(np.nan_to_num(pred, nan=prior_glob), 0.0, 1.0)
+
+
+# EVOLVE-BLOCK-END
+# =====================================================================

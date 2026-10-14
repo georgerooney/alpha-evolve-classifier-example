@@ -189,3 +189,85 @@ def test_ui_has_no_offline_fabrication_and_polls_live_run() -> None:
     assert "buildFallbackCandidates" not in html
     assert "/api/live_run" in html and "/api/problems" in html
 
+
+def test_list_runs_and_analysis_loaded_in_live_run_and_setup(tmp_path: pathlib.Path) -> None:
+    calls: list = []
+    session = _live_session(tmp_path, calls)
+    run_dir = tmp_path / "runs" / REAL / "123"
+    analysis_payload = {
+        "headline": "Replaces single LightGBM with an out-of-fold patient history + GBDT blend (+0.0095 locked-test AUC).",
+        "what_changed": "- Added prior encounter utilization trajectory features.\n- Blended LightGBM and CatBoost.",
+        "why_it_works": "- Captures non-linear disposition × inpatient frequency interactions.",
+        "what_didnt_work": "- Raw HistGradientBoostingClassifier categoricals crashed when cardinality exceeded 255.",
+        "risks": "- Monitor subgroup calibration drift.",
+        "next_steps": ["Add isotonic post-calibration", "Test encounter recency decay"],
+        "model": "gemini-3.8-flash",
+        "generated_at": "2026-10-14T02:00:00Z",
+    }
+    (run_dir / "analysis.json").write_text(json.dumps(analysis_payload), encoding="utf-8")
+
+    # Add a second completed run on disk to verify multi-run selector and run_id resolution
+    run2 = tmp_path / "runs" / REAL / "456"
+    (run2 / "candidates").mkdir(parents=True)
+    seed_code = (pathlib.Path(__file__).resolve().parent.parent / "problems" / REAL / "initial_program.py").read_text()
+    (run2 / "candidates" / "c9.py").write_text(seed_code + "\n# second run winner\n", encoding="utf-8")
+    (run2 / "candidates.json").write_text(
+        json.dumps(
+            [
+                {
+                    "candidate_id": "c9",
+                    "generation": 1,
+                    "score": 6769.69,
+                    "status": "GRADED",
+                    "rank": 1,
+                    "what_changed": "Added GBDT blend",
+                    "summary": "Blends tuned LightGBM with out-of-fold patient utilization history.",
+                    "summary_model": "gemini-3.5-flash-lite",
+                    "roc_auc": 0.6770,
+                    "pr_auc": 0.246,
+                    "brier": 0.0957,
+                    "source_file": "candidates/c9.py",
+                    "insights": [f"[{REAL}] Score=6769.69 | ROC-AUC=0.6770 ± 0.0025 over 3 rounds"],
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    runs = session.list_runs(REAL)
+    assert len(runs) == 2
+    assert {r["run_id"] for r in runs} == {"123", "456"}
+
+    live_123 = session.get_live_run(REAL, run_id="123")
+    assert live_123["analysis"]["model"] == "gemini-3.8-flash"
+    assert "out-of-fold" in live_123["analysis"]["headline"]
+    assert len(live_123["runs"]) == 2
+
+    diag_456 = session.get_candidate_run_diagnostics(REAL, run_id="456")
+    assert diag_456["run_id"] == "456"
+    assert diag_456["candidates"][0]["summary"] == "Blends tuned LightGBM with out-of-fold patient utilization history."
+
+    src_456 = session.get_candidate_source(REAL, "c9", run_id="456")
+    assert "# second run winner" in src_456["code"]
+    assert src_456["summary"] == "Blends tuned LightGBM with out-of-fold patient utilization history."
+
+    setup = session.get_setup(REAL, run_id="123")
+    assert setup["problem_id"] == REAL
+    assert "EVOLVE-BLOCK-START" in setup["evolve_block"]
+    assert setup["analysis"]["model"] == "gemini-3.8-flash"
+    assert len(setup["runs"]) == 2
+
+
+def test_ui_renders_gemini_analysis_card_and_warm_editorial_theme() -> None:
+    html = (pathlib.Path(__file__).resolve().parent.parent / "simulator" / "simulator_ui.html").read_text(encoding="utf-8")
+    # Warm editorial paper palette & 3-step narrative flow
+    assert "#f4f2ec" in html
+    assert "Step 1" in html and "Step 2" in html and "Step 3" in html
+    # Gemini 3.8 Run Commentary card & candidate summary support
+    assert "gemini-3.8-flash" in html
+    assert "What AlphaEvolve changed" in html
+    assert "what_didnt_work" in html
+    assert "next_steps" in html
+    assert "/api/setup" in html
+
+

@@ -1,0 +1,40 @@
+{
+  "problem_id": "diabetes130_readmit30",
+  "experiment_name": "projects/000000000000/locations/global/collections/default_collection/engines/alphaevolve-classifier/sessions/9141682300480956313/alphaEvolveExperiments/13049864015636605646",
+  "git_commit": "05120573955d4c4b8676962b8ac070bdbb127112",
+  "total_programs_listed": 121,
+  "baseline": {
+    "fitness": 6645.986866346923,
+    "heldout": 6808.363311020455,
+    "canonical": 6655.666721512775
+  },
+  "top": [
+    {
+      "rank": 1,
+      "program_name": "projects/000000000000/locations/global/collections/default_collection/engines/alphaevolve-classifier/sessions/9141682300480956313/alphaEvolveExperiments/13049864015636605646/alphaEvolvePrograms/17757644583926535520",
+      "scores": {
+        "fitness": 6755.412927640338,
+        "heldout": null,
+        "canonical": 6743.106428640887
+      }
+    },
+    {
+      "rank": 2,
+      "program_name": "projects/000000000000/locations/global/collections/default_collection/engines/alphaevolve-classifier/sessions/9141682300480956313/alphaEvolveExperiments/13049864015636605646/alphaEvolvePrograms/17757644583926535601",
+      "scores": {
+        "fitness": 6744.990705779041,
+        "heldout": null,
+        "canonical": 6725.187959859769
+      }
+    },
+    {
+      "rank": 3,
+      "program_name": "projects/000000000000/locations/global/collections/default_collection/engines/alphaevolve-classifier/sessions/9141682300480956313/alphaEvolveExperiments/13049864015636605646/alphaEvolvePrograms/17757644583926536649",
+      "scores": {
+        "fitness": 6742.056583710322,
+        "heldout": null,
+        "canonical": 6715.119755754207
+      }
+    }
+  ]
+}

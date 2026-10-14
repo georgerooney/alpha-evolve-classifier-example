@@ -1,0 +1,40 @@
+{
+  "problem_id": "readmission_30d",
+  "experiment_name": "projects/000000000000/locations/global/collections/default_collection/engines/alphaevolve-classifier/sessions/1615892580834019241/alphaEvolveExperiments/8582056278282299792",
+  "git_commit": "afe9fa341a4ebd975aa30d863ea11ceab97e5a49",
+  "total_programs_listed": 80,
+  "baseline": {
+    "fitness": 6857.674542397707,
+    "heldout": 7139.929858787898,
+    "canonical": 6877.969155259807
+  },
+  "top": [
+    {
+      "rank": 1,
+      "program_name": "projects/000000000000/locations/global/collections/default_collection/engines/alphaevolve-classifier/sessions/1615892580834019241/alphaEvolveExperiments/8582056278282299792/alphaEvolvePrograms/4195456266581528201",
+      "scores": {
+        "fitness": 7672.702182660273,
+        "heldout": 8179.042752998532,
+        "canonical": 7727.845996702931
+      }
+    },
+    {
+      "rank": 2,
+      "program_name": "projects/000000000000/locations/global/collections/default_collection/engines/alphaevolve-classifier/sessions/1615892580834019241/alphaEvolveExperiments/8582056278282299792/alphaEvolvePrograms/4195456266581524630",
+      "scores": {
+        "fitness": 7663.852515216773,
+        "heldout": 8156.952435496279,
+        "canonical": 7712.635601939936
+      }
+    },
+    {
+      "rank": 3,
+      "program_name": "projects/000000000000/locations/global/collections/default_collection/engines/alphaevolve-classifier/sessions/1615892580834019241/alphaEvolveExperiments/8582056278282299792/alphaEvolvePrograms/4195456266581527249",
+      "scores": {
+        "fitness": 7662.839966041423,
+        "heldout": 8163.227073463874,
+        "canonical": 7705.929469713197
+      }
+    }
+  ]
+}
