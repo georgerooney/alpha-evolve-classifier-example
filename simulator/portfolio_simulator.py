@@ -1041,7 +1041,7 @@ def build_portfolio_snapshot() -> Dict[str, Any]:
     return PortfolioSimulationSession().evaluate_portfolio()
 
 
-def serve_ui(host: str = "127.0.0.1", port: int = 8765) -> None:
+def serve_ui(host: str = "127.0.0.1", port: int = 8767) -> None:
     """Serves `simulator_ui.html`, `/api/portfolio`, `/api/candidates`, `/api/candidate_source`, and `/api/whatif`."""
     import http.server
     import urllib.parse
@@ -1122,7 +1122,7 @@ def serve_ui(host: str = "127.0.0.1", port: int = 8765) -> None:
         def log_message(self, format: str, *args: Any) -> None:  # noqa: A002
             return
 
-    server = http.server.HTTPServer((host, port), Handler)
+    server = http.server.ThreadingHTTPServer((host, port), Handler)
     print(f"Serving Clinical Portfolio Simulator UI at http://{host}:{port}")
     server.serve_forever()
 
@@ -1132,7 +1132,7 @@ def main() -> None:
 
     p = argparse.ArgumentParser(description="Clinical Portfolio Simulator & Stakeholder UI")
     p.add_argument("--serve", action="store_true", help="Serve the interactive web UI on 127.0.0.1")
-    p.add_argument("--port", type=int, default=8765, help="Localhost port for --serve (default: 8765)")
+    p.add_argument("--port", type=int, default=8767, help="Localhost port for --serve (default: 8767)")
     args = p.parse_args()
 
     if args.serve:
